@@ -1,4 +1,5 @@
 "use server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +11,14 @@ const safeNext = (n: FormDataEntryValue | null) => {
   const s = typeof n === "string" ? n : "";
   return s.startsWith("/") && !s.startsWith("//") ? s : "/painel";
 };
+
+// Endereço do próprio site a partir da requisição; a variável fica só como reserva
+async function origin() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  return host ? `${proto}://${host}` : SITE_URL;
+}
 
 const creds = z.object({
   email: z.string().trim().email("E-mail inválido"),
@@ -34,7 +43,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { data: { full_name: parsed.data.name }, emailRedirectTo: `${SITE_URL}/auth/callback?next=/comecar` },
+    options: { data: { full_name: parsed.data.name }, emailRedirectTo: `${await origin()}/auth/callback?next=/comecar` },
   });
   if (error) return { error: error.message.includes("registered") ? "Esse e-mail já tem conta. Entre ou recupere a senha." : "Não foi possível criar a conta agora." };
   if (!data.session) return { message: "Quase lá! Enviamos um link de confirmação para o seu e-mail." };
@@ -45,7 +54,7 @@ export async function forgotPassword(_: AuthState, form: FormData): Promise<Auth
   const email = z.string().trim().email().safeParse(form.get("email"));
   if (!email.success) return { error: "E-mail inválido" };
   const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email.data, { redirectTo: `${SITE_URL}/auth/callback?next=/redefinir-senha` });
+  await supabase.auth.resetPasswordForEmail(email.data, { redirectTo: `${await origin()}/auth/callback?next=/redefinir-senha` });
   // Mesma resposta exista ou não a conta, para não revelar quem é cliente
   return { message: "Se esse e-mail tiver conta, você vai receber um link para criar uma nova senha." };
 }
