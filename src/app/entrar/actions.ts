@@ -45,7 +45,12 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     password: parsed.data.password,
     options: { data: { full_name: parsed.data.name }, emailRedirectTo: `${await origin()}/auth/callback?next=/comecar` },
   });
-  if (error) return { error: error.message.includes("registered") ? "Esse e-mail já tem conta. Entre ou recupere a senha." : "Não foi possível criar a conta agora." };
+  if (error) {
+    if (error.message.includes("registered")) return { error: "Esse e-mail já tem conta. Entre ou recupere a senha." };
+    if (error.status === 429 || error.message.toLowerCase().includes("rate limit")) return { error: "Muitas tentativas seguidas. Espere alguns minutos e tente de novo." };
+    console.error("signUp", error.status, error.message);
+    return { error: "Não foi possível criar a conta agora." };
+  }
   if (!data.session) return { message: "Quase lá! Enviamos um link de confirmação para o seu e-mail." };
   redirect("/comecar");
 }
