@@ -8,10 +8,13 @@ export async function GET(request: NextRequest) {
   const nextParam = searchParams.get("next") ?? "/painel";
   const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/painel";
 
+  let reason = searchParams.get("error_description") ?? "sem código de login";
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}${next}`);
+    reason = error.message;
+    console.error("auth callback", error.status, error.message);
   }
-  return NextResponse.redirect(`${origin}/entrar?erro=1`);
+  return NextResponse.redirect(`${origin}/entrar?erro=${encodeURIComponent(reason.slice(0, 200))}`);
 }

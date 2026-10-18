@@ -10,7 +10,7 @@ export async function updateSession(request: NextRequest) {
   if (request.nextUrl.pathname !== "/auth/callback" && (sp.has("code") || sp.has("error_description"))) {
     const url = request.nextUrl.clone();
     url.pathname = sp.has("code") ? "/auth/callback" : "/entrar";
-    url.search = sp.has("code") ? `?code=${encodeURIComponent(sp.get("code")!)}&next=/painel` : "?erro=1";
+    url.search = sp.has("code") ? `?code=${encodeURIComponent(sp.get("code")!)}&next=/painel` : `?erro=${encodeURIComponent(sp.get("error_description")!.slice(0, 200))}`;
     return NextResponse.redirect(url);
   }
 

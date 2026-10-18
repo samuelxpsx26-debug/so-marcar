@@ -22,7 +22,7 @@ export default async function EntrarPage({ searchParams }: { searchParams: Promi
           <p className="mt-2 text-muted">
             {mode === "signup" ? "Leva menos de 2 minutos. Sem cartão." : mode === "forgot" ? "Enviaremos um link para criar uma nova senha." : "Entre para ver sua agenda de hoje."}
           </p>
-          {sp.erro && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-bad">Não foi possível concluir o login. Tente de novo.</p>}
+          {sp.erro && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-bad">Não foi possível concluir o login. Tente de novo.{sp.erro !== "1" && <span className="mt-1 block text-xs opacity-80">Motivo: {sp.erro}</span>}</p>}
           {mode !== "forgot" && process.env.NEXT_PUBLIC_AUTH_PROVIDERS && (
             <div className="mt-8">
               <OAuthButtons next={next} />
