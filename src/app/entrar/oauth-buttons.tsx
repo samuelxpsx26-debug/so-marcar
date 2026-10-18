@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 type Provider = "google" | "facebook" | "apple";
 const LABELS: Record<Provider, string> = { google: "Continuar com Google", facebook: "Continuar com Facebook", apple: "Continuar com Apple" };
 
-const enabled = (process.env.NEXT_PUBLIC_AUTH_PROVIDERS ?? "google").split(",").map((s) => s.trim()).filter((s): s is Provider => s in LABELS);
+const enabled = (process.env.NEXT_PUBLIC_AUTH_PROVIDERS ?? "").split(",").map((s) => s.trim()).filter((s): s is Provider => s in LABELS);
 
 function Icon({ p }: { p: Provider }) {
   if (p === "google") return (
