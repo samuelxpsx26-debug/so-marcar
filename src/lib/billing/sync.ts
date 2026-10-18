@@ -82,3 +82,16 @@ export async function handleStripeEvent(db: SupabaseClient, event: Stripe.Event)
   }
   return { ignored: true };
 }
+
+/**
+ * Volta do checkout sem webhook ainda processado: consulta na Stripe as assinaturas
+ * do cliente deste negócio e sincroniza. Não confia no redirecionamento em si.
+ */
+export async function reconcileBusinessSubscription(db: SupabaseClient, businessId: string) {
+  const { data: row } = await db.from("subscriptions").select("provider_customer_id, provider_subscription_id").eq("business_id", businessId).maybeSingle();
+  if (!row?.provider_customer_id || row.provider_subscription_id) return null;
+  const list = await getStripe().subscriptions.list({ customer: row.provider_customer_id, status: "all", limit: 5 });
+  const sub = list.data.filter((s) => s.metadata?.business_id === businessId).sort((a, b) => b.created - a.created)[0];
+  if (!sub) return null;
+  return syncStripeSubscription(db, sub.id, { event: "checkout.return.verified" });
+}

@@ -3,6 +3,8 @@ import { getContext } from "@/lib/business";
 import { brl, daysUntil, formatDate, BILLING_NOTICE_DAY } from "@/lib/format";
 import { getPlan } from "@/lib/billing/plans";
 import { billingConfigured, stripeMode } from "@/lib/billing/stripe";
+import { reconcileBusinessSubscription } from "@/lib/billing/sync";
+import { createServiceClient } from "@/lib/supabase/server";
 import { SettingsForm, CancelButton } from "./settings-client";
 import { openBillingPortal, startCheckout } from "./billing-actions";
 
@@ -23,6 +25,9 @@ type Sub = {
 export default async function AjustesPage({ searchParams }: { searchParams: Promise<{ assinatura?: string }> }) {
   const { supabase, business, role } = await getContext();
   const { assinatura } = await searchParams;
+  if (assinatura === "retorno" && billingConfigured()) {
+    await reconcileBusinessSubscription(createServiceClient(), business.id).catch((e) => console.error("reconcile", String(e)));
+  }
   const subQuery = (cols: string) => supabase.from("subscriptions").select(cols).eq("business_id", business.id).maybeSingle<Sub>();
   const base = "status, plan, price_cents, trial_ends_at, current_period_end, cancel_at_period_end, provider, provider_subscription_id";
   // Antes de rodar o SQL de pagamentos a coluna last_payment_error ainda não existe
@@ -48,7 +53,7 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
 
       <section id="assinatura" className="card space-y-3">
         <h2 className="text-lg font-bold">Assinatura</h2>
-        {assinatura && NOTICES[assinatura] && sub?.status !== "active" && <p className="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{NOTICES[assinatura]}</p>}
+        {assinatura && NOTICES[assinatura] && !(assinatura === "retorno" && paid) && sub?.status !== "active" && <p className="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{NOTICES[assinatura]}</p>}
         {testMode && role === "owner" && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Modo de teste da Stripe: nenhuma cobrança é real. Use o cartão 4242 4242 4242 4242, qualquer validade futura e qualquer CVC.</p>}
         {sub?.status === "trialing" && (
           <>
