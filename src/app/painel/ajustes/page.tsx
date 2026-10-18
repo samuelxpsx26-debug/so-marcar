@@ -58,7 +58,9 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
         {sub?.status === "trialing" && (
           <>
             <p><span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">Teste grátis</span> <span className="ml-1">faltam <strong>{daysLeft} dias</strong> (até {formatDate(sub.trial_ends_at!, tz, { day: "numeric", month: "long" })})</span></p>
-            {paid
+            {paid && sub.cancel_at_period_end
+              ? <p className="text-sm text-muted">Assinatura cancelada. Nada será cobrado e sua agenda funciona até o fim do teste.</p>
+              : paid
               ? <p className="text-sm text-muted">Cartão cadastrado. A primeira cobrança de {brl(price)}/mês acontece só quando o teste acabar.</p>
               : <p className="text-sm text-muted">No dia {noticeDate ? formatDate(noticeDate, tz, { day: "numeric", month: "long" }) : BILLING_NOTICE_DAY} você recebe o aviso da primeira cobrança de {brl(price)}/mês. Nada é cobrado antes disso.</p>}
           </>
