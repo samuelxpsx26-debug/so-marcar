@@ -23,13 +23,13 @@ export default async function EntrarPage({ searchParams }: { searchParams: Promi
             {mode === "signup" ? "Leva menos de 2 minutos. Sem cartão." : mode === "forgot" ? "Enviaremos um link para criar uma nova senha." : "Entre para ver sua agenda de hoje."}
           </p>
           {sp.erro && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-bad">Não foi possível concluir o login. Tente de novo.</p>}
-          {mode !== "forgot" && (
+          {mode !== "forgot" && process.env.NEXT_PUBLIC_AUTH_PROVIDERS && (
             <div className="mt-8">
               <OAuthButtons next={next} />
               <div className="my-6 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />ou com e-mail<span className="h-px flex-1 bg-line" /></div>
             </div>
           )}
-          <div className={mode === "forgot" ? "mt-8" : ""}>
+          <div className={mode === "forgot" || !process.env.NEXT_PUBLIC_AUTH_PROVIDERS ? "mt-8" : ""}>
             <AuthForms mode={mode} next={next} />
           </div>
           <p className="mt-6 text-center text-sm text-muted">
