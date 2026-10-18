@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   applicationName: "Só Marcar",
   appleWebApp: { capable: true, title: "Só Marcar", statusBarStyle: "default" },
   icons: { icon: "/icons/icon.svg", apple: "/icons/apple-touch-icon.png" },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export const viewport: Viewport = { themeColor: "#7c3aed", width: "device-width", initialScale: 1, viewportFit: "cover" };
