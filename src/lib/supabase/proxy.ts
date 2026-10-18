@@ -5,6 +5,15 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/env";
 const PROTECTED = ["/painel", "/comecar", "/admin"];
 
 export async function updateSession(request: NextRequest) {
+  // Se o Supabase devolver o login para outra página (ex.: a inicial), leva o código para o callback
+  const sp = request.nextUrl.searchParams;
+  if (request.nextUrl.pathname !== "/auth/callback" && (sp.has("code") || sp.has("error_description"))) {
+    const url = request.nextUrl.clone();
+    url.pathname = sp.has("code") ? "/auth/callback" : "/entrar";
+    url.search = sp.has("code") ? `?code=${encodeURIComponent(sp.get("code")!)}&next=/painel` : "?erro=1";
+    return NextResponse.redirect(url);
+  }
+
   let response = NextResponse.next({ request });
   if (!supabaseConfigured) return response;
 
