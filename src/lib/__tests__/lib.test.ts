@@ -80,3 +80,27 @@ describe("slug e tema", () => {
     expect(contrast(t.background, t.text)).toBeGreaterThan(4.5);
   });
 });
+
+import { renderEmail } from "../email-templates";
+
+describe("renderEmail", () => {
+  const d = {
+    customerName: "João <b>Silva</b>", businessName: "Barbearia & Cia", serviceName: "Corte", professionalName: "Léo",
+    startsAt: "2026-10-21T17:30:00Z", timeZone: "America/Sao_Paulo", manageUrl: "https://so-marcar.vercel.app/reserva/abc", primary: "#123456",
+  };
+  it("monta assunto, horário local e link", () => {
+    const m = renderEmail("confirmation", d);
+    expect(m.subject).toBe("Horário confirmado em Barbearia & Cia");
+    expect(m.text).toContain("Quarta-feira, 21 de outubro às 14:30");
+    expect(m.html).toContain("https://so-marcar.vercel.app/reserva/abc");
+    expect(m.html).toContain("#123456");
+  });
+  it("escapa HTML vindo do cliente", () => {
+    const m = renderEmail("reminder", d);
+    expect(m.html).not.toContain("<b>");
+    expect(m.html).toContain("Barbearia &amp; Cia");
+  });
+  it("ignora cor inválida", () => {
+    expect(renderEmail("reschedule", { ...d, primary: "red;x" }).html).toContain("#7c3aed");
+  });
+});

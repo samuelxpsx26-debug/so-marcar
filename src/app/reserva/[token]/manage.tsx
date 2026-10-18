@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { notify } from "@/lib/notify-client";
 import { brl, formatDate, formatTime, waLink } from "@/lib/format";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import type { ResolvedTheme } from "@/components/booking/types";
@@ -39,7 +40,9 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
     const { data, error } = await createClient().rpc("reschedule_booking_by_token", { p_token: token, p_starts_at: startsAt, p_professional: pro });
     setBusy(false);
     if (error) return setError(error.message);
-    router.replace(`/reserva/${(data as { manage_token: string }).manage_token}`);
+    const next = (data as { manage_token: string }).manage_token;
+    notify(next);
+    router.replace(`/reserva/${next}`);
   }
 
   return (

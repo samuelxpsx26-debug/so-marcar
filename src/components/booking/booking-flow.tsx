@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { notify } from "@/lib/notify-client";
 import { brl, formatDate, formatTime, normalizePhone, waLink } from "@/lib/format";
 import { SlotPicker } from "./slot-picker";
 import type { PublicBusiness, ResolvedTheme, Slot } from "./types";
@@ -49,6 +50,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
       return;
     }
     setResult(data as { manage_token: string; starts_at: string });
+    notify((data as { manage_token: string }).manage_token);
     setStep("done");
   }
 
