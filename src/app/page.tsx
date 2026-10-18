@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { brl, pricePerDay, PLAN_PRICE_CENTS } from "@/lib/format";
+import { createClient as createAnonClient } from "@supabase/supabase-js";
+import { brl, pricePerDay, PLAN_PRICE_CENTS, TRIAL_DAYS } from "@/lib/format";
+import { getPlan } from "@/lib/billing/plans";
+import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/env";
+
+// Preço e dias grátis vêm da tabela plans; revalida de hora em hora
+export const revalidate = 3600;
 
 const niches = ["Barbearias", "Salões", "Manicures", "Estética", "Personal trainers", "Estúdios", "Tatuadores", "Autônomos"];
 
@@ -13,7 +19,10 @@ const features = [
   { t: "Quanto o app te deu", d: "O painel mostra a receita que chegou pelo link e os atendimentos salvos por remarcação. Você vê o retorno em reais." },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const plan = supabaseConfigured ? await getPlan(createAnonClient(SUPABASE_URL, SUPABASE_ANON_KEY)).catch(() => null) : null;
+  const price = plan?.price_cents ?? PLAN_PRICE_CENTS;
+  const trial = plan?.trial_days ?? TRIAL_DAYS;
   return (
     <main className="overflow-x-hidden">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
@@ -32,7 +41,7 @@ export default function Home() {
         </h1>
         <p className="mt-5 max-w-2xl text-lg text-muted">
           O Só Marcar recebe agendamentos pelo seu link, lembra seus clientes e mostra todo dia quem chamar para voltar.
-          Por <strong className="text-ink">{pricePerDay()} por dia</strong>.
+          Por <strong className="text-ink">{pricePerDay(price)} por dia</strong>.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link href="/entrar?modo=cadastro" className="btn btn-primary px-6 py-4 text-base">Começar meu mês grátis</Link>
@@ -63,10 +72,10 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="mx-auto max-w-md rounded-3xl border border-line bg-surface p-8 text-center shadow-xl shadow-violet-200/50">
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">Plano único</p>
-          <p className="mt-3 text-5xl font-extrabold">{brl(PLAN_PRICE_CENTS)}<span className="text-lg font-medium text-muted">/mês</span></p>
-          <p className="mt-2 text-muted">Menos de {pricePerDay()} por dia. Um cliente que volta já paga o mês.</p>
+          <p className="mt-3 text-5xl font-extrabold">{brl(price)}<span className="text-lg font-medium text-muted">/mês</span></p>
+          <p className="mt-2 text-muted">Menos de {pricePerDay(price)} por dia. Um cliente que volta já paga o mês.</p>
           <ul className="mt-6 space-y-2 text-left text-sm">
-            {["30 dias grátis para testar tudo", "Aviso da primeira cobrança no dia 25, sem surpresa", "Agendamentos ilimitados e sem comissão", "Profissionais, serviços e clientes sem limite", "Cancelamento simples, direto no app"].map((i) => (
+            {[`${trial} dias grátis para testar tudo`, "Aviso da primeira cobrança no dia 25, sem surpresa", "Agendamentos ilimitados e sem comissão", "Profissionais, serviços e clientes sem limite", "Cancelamento simples, direto no app"].map((i) => (
               <li key={i} className="flex gap-2"><span className="text-good">✓</span>{i}</li>
             ))}
           </ul>

@@ -4,6 +4,8 @@ import { z } from "zod";
 import { getContext } from "@/lib/business";
 import { normalizePhone } from "@/lib/format";
 import { createServiceClient } from "@/lib/supabase/server";
+import { billingConfigured, getStripe } from "@/lib/billing/stripe";
+import { syncStripeSubscription } from "@/lib/billing/sync";
 
 export type R = { ok?: boolean; error?: string };
 
@@ -40,12 +42,24 @@ export async function cancelSubscription(): Promise<R> {
   const { business, role, userId } = await getContext();
   if (role !== "owner") return { error: "Só o dono pode cancelar a assinatura." };
   const admin = createServiceClient();
-  const { data: sub } = await admin.from("subscriptions").select("id, status, trial_ends_at, current_period_end").eq("business_id", business.id).single();
+  const { data: sub } = await admin.from("subscriptions").select("id, status, trial_ends_at, current_period_end, provider, provider_subscription_id, provider_status").eq("business_id", business.id).single();
   if (!sub) return { error: "Assinatura não encontrada" };
-  const until = sub.status === "trialing" ? sub.trial_ends_at : sub.current_period_end;
-  await admin.from("subscriptions").update({ status: "canceled", cancel_at_period_end: true, current_period_end: until }).eq("id", sub.id);
-  await admin.from("subscription_events").insert({ subscription_id: sub.id, kind: "canceled_by_owner", data: { user: userId } });
-  // TODO(cobrança): cancelar também no provedor de pagamento quando a integração entrar
+
+  // Assinatura paga: cancela na Stripe e só então atualiza o acesso, com o estado que a Stripe devolver
+  if (sub.provider === "stripe" && sub.provider_subscription_id && sub.provider_status !== "canceled") {
+    if (!billingConfigured()) return { error: "Não foi possível cancelar agora. Tente de novo mais tarde." };
+    try {
+      await getStripe().subscriptions.update(sub.provider_subscription_id, { cancel_at_period_end: true });
+      await syncStripeSubscription(admin, sub.provider_subscription_id, { event: "canceled_by_owner" });
+    } catch (e) {
+      console.error("cancel stripe", String(e));
+      return { error: "Não foi possível cancelar agora. Tente de novo mais tarde." };
+    }
+  } else {
+    const until = sub.status === "trialing" ? sub.trial_ends_at : sub.current_period_end;
+    await admin.from("subscriptions").update({ status: "canceled", cancel_at_period_end: true, current_period_end: until }).eq("id", sub.id);
+    await admin.from("subscription_events").insert({ subscription_id: sub.id, kind: "canceled_by_owner", data: { user: userId } });
+  }
   revalidatePath("/painel/ajustes");
   return { ok: true };
 }

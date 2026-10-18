@@ -184,5 +184,30 @@ begin
 exception when no_data_found then raise notice 'ok: teste vencido pausa a agenda pública';
 end $$;
 
+-- Pagamentos: plano vem da tabela, segredos e escrita só pelo servidor
+reset role;
+select pg_temp.assert((select plan || ':' || price_cents from public.subscriptions where business_id = (select v::uuid from ctx where k = 'biz_a')) = 'essencial:3790',
+  'assinatura nasce com o plano padrão');
+insert into public.payment_accounts (id, business_id, provider, status) values ('00000000-0000-0000-0000-0000000000f1', (select v::uuid from ctx where k = 'biz_a'), 'asaas', 'connected');
+insert into public.payment_account_secrets values ('00000000-0000-0000-0000-0000000000f1', 'cifrado');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.assert((select count(*) from public.payment_accounts) = 1, 'dona vê a conta de pagamento');
+select pg_temp.assert((select count(*) from public.plans) = 1, 'planos são públicos');
+do $$ begin
+  perform * from public.payment_account_secrets;
+  raise exception 'FALHOU: dona leu credenciais';
+exception when insufficient_privilege then raise notice 'ok: credenciais só no servidor';
+end $$;
+do $$ begin
+  insert into public.payments (business_id, payment_account_id, provider, environment, method, amount_cents)
+  values ((select business_id from public.payment_accounts limit 1), '00000000-0000-0000-0000-0000000000f1', 'asaas', 'sandbox', 'pix', 1000);
+  raise exception 'FALHOU: painel criou pagamento direto';
+exception when insufficient_privilege then raise notice 'ok: pagamentos só pelo servidor';
+end $$;
+do $$ begin
+  update public.subscriptions set status = 'active';
+  raise exception 'FALHOU: painel ativou a própria assinatura';
+exception when insufficient_privilege then raise notice 'ok: assinatura só muda pelo servidor';
+end $$;
 reset role;
 \echo 'TODOS OS TESTES DO BANCO PASSARAM'

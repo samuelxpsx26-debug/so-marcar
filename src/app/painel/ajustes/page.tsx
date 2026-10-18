@@ -1,16 +1,42 @@
 import type { Metadata } from "next";
 import { getContext } from "@/lib/business";
-import { brl, daysUntil, formatDate, PLAN_PRICE_CENTS, BILLING_NOTICE_DAY, TRIAL_DAYS } from "@/lib/format";
+import { brl, daysUntil, formatDate, BILLING_NOTICE_DAY } from "@/lib/format";
+import { getPlan } from "@/lib/billing/plans";
+import { billingConfigured, stripeMode } from "@/lib/billing/stripe";
 import { SettingsForm, CancelButton } from "./settings-client";
+import { openBillingPortal, startCheckout } from "./billing-actions";
+
+const NOTICES: Record<string, string> = {
+  retorno: "Recebemos seu retorno do pagamento. Assim que a Stripe confirmar, sua assinatura aparece como ativa aqui. Atualize a página em instantes.",
+  indisponivel: "A cobrança online ainda não está liberada. Nada foi cobrado.",
+  "sem-permissao": "Só o dono do negócio pode mexer na assinatura.",
+  erro: "Não foi possível abrir o pagamento agora. Tente de novo em instantes.",
+};
 
 export const metadata: Metadata = { title: "Ajustes" };
 
-export default async function AjustesPage() {
+type Sub = {
+  status: string; plan: string; price_cents: number; trial_ends_at: string | null; current_period_end: string | null;
+  cancel_at_period_end: boolean; provider: string | null; provider_subscription_id: string | null; last_payment_error?: string | null;
+};
+
+export default async function AjustesPage({ searchParams }: { searchParams: Promise<{ assinatura?: string }> }) {
   const { supabase, business, role } = await getContext();
-  const { data: sub } = await supabase.from("subscriptions").select("status, trial_ends_at, current_period_end, cancel_at_period_end").eq("business_id", business.id).maybeSingle();
+  const { assinatura } = await searchParams;
+  const subQuery = (cols: string) => supabase.from("subscriptions").select(cols).eq("business_id", business.id).maybeSingle<Sub>();
+  const base = "status, plan, price_cents, trial_ends_at, current_period_end, cancel_at_period_end, provider, provider_subscription_id";
+  // Antes de rodar o SQL de pagamentos a coluna last_payment_error ainda não existe
+  const first = await subQuery(`${base}, last_payment_error`);
+  const sub = first.error ? (await subQuery(base)).data : first.data;
+  const plan = await getPlan(supabase, sub?.plan);
+  const price = sub?.price_cents ?? plan?.price_cents ?? 0;
+  const canPay = billingConfigured() && role === "owner";
+  const paid = Boolean(sub?.provider === "stripe" && sub.provider_subscription_id && !["canceled", "expired"].includes(sub.status));
+  const testMode = stripeMode() === "test";
   const tz = business.timezone;
   const daysLeft = daysUntil(sub?.trial_ends_at);
-  const noticeDate = sub?.trial_ends_at ? new Date(new Date(sub.trial_ends_at).getTime() - (TRIAL_DAYS - BILLING_NOTICE_DAY) * 86_400_000) : null;
+  const trialDays = plan?.trial_days ?? 30;
+  const noticeDate = sub?.trial_ends_at ? new Date(new Date(sub.trial_ends_at).getTime() - (trialDays - BILLING_NOTICE_DAY) * 86_400_000) : null;
 
   return (
     <div className="space-y-8">
@@ -22,17 +48,25 @@ export default async function AjustesPage() {
 
       <section id="assinatura" className="card space-y-3">
         <h2 className="text-lg font-bold">Assinatura</h2>
+        {assinatura && NOTICES[assinatura] && sub?.status !== "active" && <p className="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{NOTICES[assinatura]}</p>}
+        {testMode && role === "owner" && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Modo de teste da Stripe: nenhuma cobrança é real. Use o cartão 4242 4242 4242 4242, qualquer validade futura e qualquer CVC.</p>}
         {sub?.status === "trialing" && (
           <>
             <p><span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-800">Teste grátis</span> <span className="ml-1">faltam <strong>{daysLeft} dias</strong> (até {formatDate(sub.trial_ends_at!, tz, { day: "numeric", month: "long" })})</span></p>
-            <p className="text-sm text-muted">No dia {noticeDate ? formatDate(noticeDate, tz, { day: "numeric", month: "long" }) : BILLING_NOTICE_DAY} você recebe o aviso da primeira cobrança de {brl(PLAN_PRICE_CENTS)}/mês. Nada é cobrado antes disso.</p>
+            {paid
+              ? <p className="text-sm text-muted">Cartão cadastrado. A primeira cobrança de {brl(price)}/mês acontece só quando o teste acabar.</p>
+              : <p className="text-sm text-muted">No dia {noticeDate ? formatDate(noticeDate, tz, { day: "numeric", month: "long" }) : BILLING_NOTICE_DAY} você recebe o aviso da primeira cobrança de {brl(price)}/mês. Nada é cobrado antes disso.</p>}
           </>
         )}
-        {sub?.status === "active" && <p><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-good">Ativa</span> {brl(PLAN_PRICE_CENTS)}/mês{sub.current_period_end ? ` · renova em ${formatDate(sub.current_period_end, tz, { day: "numeric", month: "long" })}` : ""}</p>}
-        {sub?.status === "past_due" && <p className="text-bad">Pagamento pendente. Regularize para não pausar sua agenda.</p>}
+        {sub?.status === "active" && <p><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-good">Ativa</span> {brl(price)}/mês{sub.current_period_end ? (sub.cancel_at_period_end ? ` · cancelada, funciona até ${formatDate(sub.current_period_end, tz, { day: "numeric", month: "long" })}` : ` · renova em ${formatDate(sub.current_period_end, tz, { day: "numeric", month: "long" })}`) : ""}</p>}
+        {sub?.status === "past_due" && <p className="text-bad">{sub.last_payment_error ?? "Pagamento pendente."} Regularize para não pausar sua agenda.</p>}
         {sub?.status === "canceled" && <p>Assinatura cancelada. Sua agenda funciona até {sub.current_period_end ? formatDate(sub.current_period_end, tz, { day: "numeric", month: "long" }) : "o fim do período"}.</p>}
         {sub?.status === "expired" && <p className="text-bad">Seu acesso expirou. Seus dados ficam guardados para quando quiser voltar.</p>}
-        {role === "owner" && sub && sub.status !== "canceled" && sub.status !== "expired" && <CancelButton />}
+        {canPay && !paid && sub && sub.status !== "active" && (
+          <form action={startCheckout}><button className="btn btn-primary">{sub.status === "trialing" ? "Cadastrar cartão e garantir a assinatura" : "Assinar agora"}</button></form>
+        )}
+        {canPay && paid && <form action={openBillingPortal}><button className="btn">{sub?.status === "past_due" ? "Atualizar cartão" : "Cartão e faturas"}</button></form>}
+        {role === "owner" && sub && sub.status !== "canceled" && sub.status !== "expired" && !sub.cancel_at_period_end && <CancelButton />}
         <p className="text-xs text-muted">Sem fidelidade e sem multa. Você cancela aqui mesmo, a qualquer momento.</p>
       </section>
     </div>
