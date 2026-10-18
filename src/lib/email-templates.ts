@@ -51,3 +51,36 @@ ${rows.map(([k, v]) => `<tr><td style="padding:10px 16px;font-size:13px;color:#7
 
   return { subject: c.subject(d), html, text };
 }
+
+export type TrialNoticeData = {
+  ownerName: string;
+  businessName: string;
+  trialEndsAt: string;
+  timeZone: string;
+  priceLabel: string; // ex.: "R$ 37,90"
+  cardOnFile: boolean;
+  settingsUrl: string;
+};
+
+/** Aviso ao dono, alguns dias antes do fim do teste grátis: diz exatamente o que vai acontecer. */
+export function renderTrialNotice(d: TrialNoticeData) {
+  const first = d.ownerName.trim().split(/\s+/)[0] || "Olá";
+  const date = formatDate(d.trialEndsAt, d.timeZone, { day: "numeric", month: "long" });
+  const subject = `Seu teste grátis do Só Marcar termina em ${date}`;
+  const lines = d.cardOnFile
+    ? [`No dia ${date} acontece a primeira cobrança de ${d.priceLabel}/mês no cartão que você cadastrou.`, "Não precisa fazer nada. Se preferir não continuar, cancele em Ajustes antes dessa data e nada será cobrado."]
+    : [`Seu teste grátis termina no dia ${date}. A assinatura custa ${d.priceLabel}/mês, sem fidelidade e sem comissão.`, "Para sua agenda continuar aberta, cadastre o cartão em Ajustes. Se não quiser continuar, não precisa fazer nada: nada será cobrado."];
+  const cta = d.cardOnFile ? "Ver minha assinatura" : "Cadastrar cartão";
+
+  const text = [`${first}, tudo bem?`, "", ...lines, "", `${cta}: ${d.settingsUrl}`, "", "Equipe Só Marcar"].join("\n");
+  const html = `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f4f4f7;font-family:Arial,Helvetica,sans-serif;color:#18181b">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden">
+<tr><td style="background:#7c3aed;color:#ffffff;padding:20px 24px;font-size:14px;font-weight:bold">Só Marcar · ${esc(d.businessName)}</td></tr>
+<tr><td style="padding:24px">
+<h1 style="margin:0 0 12px;font-size:22px">Seu teste grátis termina em ${esc(date)}</h1>
+${lines.map((l) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5">${esc(l)}</p>`).join("")}
+<p style="margin:24px 0 0;text-align:center"><a href="${esc(d.settingsUrl)}" style="display:inline-block;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:999px;font-size:15px">${cta}</a></p>
+</td></tr></table></td></tr></table></body></html>`;
+  return { subject, html, text };
+}

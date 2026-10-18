@@ -104,3 +104,20 @@ describe("renderEmail", () => {
     expect(renderEmail("reschedule", { ...d, primary: "red;x" }).html).toContain("#7c3aed");
   });
 });
+
+import { renderTrialNotice } from "../email-templates";
+
+describe("renderTrialNotice", () => {
+  const base = { ownerName: "Widney Silva", businessName: "Barbearia <X>", trialEndsAt: "2026-11-17T15:00:00Z", timeZone: "America/Sao_Paulo", priceLabel: "R$ 37,90", settingsUrl: "https://so-marcar.vercel.app/painel/ajustes#assinatura" };
+  it("com cartão: avisa data e valor da primeira cobrança", () => {
+    const m = renderTrialNotice({ ...base, cardOnFile: true });
+    expect(m.subject).toBe("Seu teste grátis do Só Marcar termina em 17 de novembro");
+    expect(m.text).toContain("primeira cobrança de R$ 37,90/mês");
+    expect(m.html).toContain("Barbearia &lt;X&gt;");
+  });
+  it("sem cartão: deixa claro que nada é cobrado", () => {
+    const m = renderTrialNotice({ ...base, cardOnFile: false });
+    expect(m.text).toContain("nada será cobrado");
+    expect(m.text).toContain("Cadastrar cartão");
+  });
+});
