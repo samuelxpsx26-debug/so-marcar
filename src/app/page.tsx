@@ -85,7 +85,7 @@ export default async function Home() {
 
       <footer className="border-t border-line py-8 text-center text-sm text-muted">
         <Logo className="text-ink" />
-        <p className="mt-2">© {new Date().getFullYear()} Só Marcar</p>
+        <p className="mt-2">© {new Date().getFullYear()} Só Marcar · <Link className="underline" href="/privacidade">Privacidade</Link> · <Link className="underline" href="/termos">Termos de uso</Link></p>
       </footer>
     </main>
   );
