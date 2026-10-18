@@ -70,7 +70,7 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
         {canPay && !paid && sub && sub.status !== "active" && (
           <form action={startCheckout}><button className="btn btn-primary">{sub.status === "trialing" ? "Cadastrar cartão e garantir a assinatura" : "Assinar agora"}</button></form>
         )}
-        {canPay && paid && <form action={openBillingPortal}><button className="btn">{sub?.status === "past_due" ? "Atualizar cartão" : "Cartão e faturas"}</button></form>}
+        {canPay && paid && <form action={openBillingPortal}><button className="btn btn-ghost">{sub?.status === "past_due" ? "Atualizar cartão" : "Cartão e faturas"}</button></form>}
         {role === "owner" && sub && sub.status !== "canceled" && sub.status !== "expired" && !sub.cancel_at_period_end && <CancelButton />}
         <p className="text-xs text-muted">Sem fidelidade e sem multa. Você cancela aqui mesmo, a qualquer momento.</p>
       </section>
