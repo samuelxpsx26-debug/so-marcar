@@ -72,7 +72,8 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
     const { data, error } = await createClient().rpc("create_public_booking", {
       p_slug: b.slug, p_service: serviceId, p_professional: slot.professional_id, p_starts_at: slot.starts_at,
       p_name: form.name, p_phone: form.phone, p_email: form.email || null, p_idempotency_key: idem, p_marketing_consent: form.consent,
-      p_coupon: discount > 0 ? coupon!.code : null,
+      // Só manda o cupom quando há um: assim a reserva funciona mesmo antes do SQL de cupons
+      ...(discount > 0 ? { p_coupon: coupon!.code } : {}),
     });
     setBusy(false);
     if (error) {
