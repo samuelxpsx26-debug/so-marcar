@@ -54,7 +54,7 @@ export function Waitlist({ b, theme, service, professionalId, day }: { b: Public
           <div className="grid grid-cols-2 gap-2">
             {PERIODS.map(([id, label]) => (
               <button key={id} type="button" aria-pressed={period === id} onClick={() => setPeriod(id)} className="rounded-xl py-2.5 text-sm font-semibold"
-                style={period === id ? { background: theme.primary, color: theme.onPrimary } : { background: soft }}>{label}</button>
+                style={period === id ? { background: theme.primary, color: theme.onPrimary, border: `1px solid ${theme.primary}` } : { background: soft, border: `1px solid ${theme.text}33` }}>{label}</button>
             ))}
           </div>
         </div>
