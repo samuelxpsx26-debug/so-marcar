@@ -204,3 +204,14 @@
 @media (min-width: 900px) { .lp-tiles { grid-template-columns: repeat(3, 1fr); max-width: 980px; margin-left: auto; margin-right: auto; } }
 /* "Seu negócio:" em cima e os nichos todos numa fileira */
 .lp-switch > span:first-child { flex-basis: 100%; font-size: 13px; letter-spacing: .02em; }
+
+/* Lista completa de funções */
+.lp-fgroup { gap: 18px; }
+.lp-fgroup-head { display: flex; gap: 14px; align-items: center; }
+.lp-fgroup-head h3 { margin: 0; }
+.lp-fgroup-head small { display: block; margin-top: 3px; font-size: 14px; color: var(--lp-muted); }
+.lp-fgroup-icon { flex: none; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: var(--lp-accent-soft); color: var(--lp-accent); }
+.lp-flist { list-style: none; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--lp-line); display: flex; flex-direction: column; gap: 14px; }
+.lp-flist li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; color: var(--lp-muted); }
+.lp-flist li svg { flex: none; margin-top: 2px; color: var(--lp-accent); }
+.lp-flist b { display: block; font-size: 15px; color: var(--lp-ink); }

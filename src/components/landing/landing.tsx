@@ -12,13 +12,57 @@ const SLOTS: [string, "free" | "busy" | "on"][] = [
   ["14:00", "free"], ["15:30", "busy"], ["17:00", "free"], ["18:30", "free"],
 ];
 
-const FEATURES: [string, string][] = [
-  ["Agenda aberta 24 horas", "Serviço, profissional e horário escolhidos pelo link, sem o cliente criar conta."],
-  ["Remarcação em um toque", "O cliente remarca ou cancela pelo próprio link e o horário volta para a agenda na hora."],
-  ["Sua cara, suas cores", "Tema do seu nicho, cores e foto de fundo na sua página. Nada de modelo engessado."],
-  ["Equipe organizada", "Cada profissional com seus horários, pausas e serviços, tudo num painel só."],
-  ["Quanto o app te deu", "Receita que chegou pelo link e atendimentos salvos por remarcação, em reais."],
-  ["Instala no celular", "Funciona como app no seu celular, sem baixar nada na loja."],
+type Feature = [title: string, desc: string];
+type FeatureGroup = { title: string; lead: string; icon: string; items: Feature[] };
+
+// Lista completa de funções da página inicial. "{cp}" vira a palavra do nicho (clientes, alunos...).
+const FEATURE_GROUPS: FeatureGroup[] = [
+  {
+    title: "Agenda e página",
+    lead: "Seu link de agendamento aberto 24 horas.",
+    icon: "M3 5h18v16H3zM8 3v4M16 3v4M3 10h18",
+    items: [
+      ["Agendamento pelo link", "Serviço, profissional e horário escolhidos sem criar conta nem baixar app."],
+      ["Remarcar e cancelar sozinho", "O {c} resolve pelo próprio link e o horário volta para a agenda na hora."],
+      ["Lista de espera", "Dia lotado? O {c} entra na fila e você avisa quando abrir uma vaga."],
+      ["Página com a sua cara", "Tema do seu nicho, suas cores e foto de capa."],
+      ["Equipe sem limite", "Cada profissional com seus horários, pausas e serviços."],
+    ],
+  },
+  {
+    title: "Dinheiro no bolso",
+    lead: "Menos falta e mais venda por atendimento.",
+    icon: "M12 2v20M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.8c0 4.7 10 2.5 10 7.4 0 2.3-2.2 3.8-5 3.8s-5-1.2-5-3.3",
+    items: [
+      ["Sinal por Pix", "Cobre uma parte na reserva, direto na sua chave Pix, e reduza as faltas."],
+      ["Pacotes", "Venda 4, 5 ou 10 atendimentos de uma vez e o app desconta cada uso."],
+      ["Clube mensal", "Assinatura com atendimentos por mês e aviso de mensalidade a receber."],
+      ["Cupons de desconto", "Crie um código e mande o link: o desconto já entra na reserva."],
+    ],
+  },
+  {
+    title: "{CP} que voltam",
+    lead: "Quem vem uma vez, volta sempre.",
+    icon: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z",
+    items: [
+      ["Cartão fidelidade", "Selos automáticos a cada atendimento e prêmio na hora certa."],
+      ["Campanha para quem sumiu", "Veja quem não volta há 7, 15, 30 dias ou mais e chame com a mensagem pronta no WhatsApp."],
+      ["Oportunidades de Hoje", "Toda manhã: horários vagos, quem confirmar e quem chamar de volta."],
+      ["Lembra o {c}", "Nome e WhatsApp ficam salvos no celular dele para a próxima reserva."],
+    ],
+  },
+  {
+    title: "Gestão sem planilha",
+    lead: "Os números do seu negócio num toque.",
+    icon: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+    items: [
+      ["Relatórios", "Faturamento de hoje, da semana, do mês e do ano, por serviço e profissional."],
+      ["Quem mais frequenta e quem mais gasta", "Saiba quem são seus melhores {cp}."],
+      ["Ficha de cada {c}", "Histórico de atendimentos, pacotes, clube e selos num lugar só."],
+      ["Planilha de {cp}", "Baixe todos os contatos para Excel ou Google Planilhas."],
+      ["Instala no celular", "Funciona como app, sem loja e sem ocupar espaço."],
+    ],
+  },
 ];
 
 /** Lembra o nicho para já vir marcado no cadastro do negócio (/comecar lê o cookie) */
@@ -66,6 +110,7 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
   const t = NICHES.find((n) => n.id === chosen) ?? NEUTRAL;
   useEffect(() => { if (chosen) rememberNiche(chosen); }, [chosen]);
   const cap = t.clientPlural.charAt(0).toUpperCase() + t.clientPlural.slice(1);
+  const word = (x: string) => x.replaceAll("{CP}", cap).replaceAll("{cp}", t.clientPlural).replaceAll("{c}", t.clientWord);
 
   function pick(id: NicheId) {
     setChosen(id);
@@ -113,7 +158,7 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
           </Link>
           <nav className="lp-nav" aria-label="Seções">
             <a href="#como">Como funciona</a>
-            <a href="#recursos">Recursos</a>
+            <a href="#funcoes">Funções</a>
             <a href="#preco">Preço</a>
             <a href="#duvidas">Dúvidas</a>
           </nav>
@@ -271,15 +316,39 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
           </div>
         </section>
 
-        <section className="lp-wrap" style={{ paddingBottom: 80 }}>
-          <div className="lp-grid" style={{ "--lp-min": "260px", gap: 14 } as CSSProperties}>
-            {FEATURES.map(([title, d], i) => (
-              <div key={title} className="lp-card" style={{ gap: 10, padding: 24 }}>
-                <span className="lp-num lp-display">0{i + 1}</span>
-                <h3>{title}</h3>
-                <p>{d}</p>
-              </div>
-            ))}
+        <section id="funcoes" className="lp-band">
+          <div className="lp-wrap lp-section">
+            <div className="lp-head">
+              <span className="lp-eyebrow">Tudo incluído no plano</span>
+              <h2 className="lp-h2 lp-display">Tudo o que o Só Marcar faz por você.</h2>
+              <p className="lp-muted" style={{ margin: 0, fontSize: 17, lineHeight: 1.6 }}>Nada de plano básico e plano completo: por {priceLabel} por mês você usa todas as funções abaixo, sem limite de agendamentos.</p>
+            </div>
+            <div className="lp-grid" style={{ "--lp-min": "440px" } as CSSProperties}>
+              {FEATURE_GROUPS.map((g) => (
+                <div key={g.title} className="lp-card lp-fgroup">
+                  <div className="lp-fgroup-head">
+                    <span className="lp-fgroup-icon" aria-hidden="true">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"><path d={g.icon} /></svg>
+                    </span>
+                    <span>
+                      <h3>{word(g.title)}</h3>
+                      <small>{g.lead}</small>
+                    </span>
+                  </div>
+                  <ul className="lp-flist">
+                    {g.items.map(([title, d]) => (
+                      <li key={title}>
+                        <Check size={18} />
+                        <span><b>{word(title)}</b>{word(d)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <div className="lp-row" style={{ justifyContent: "center" }}>
+              <Link href={SIGNUP} className="lp-btn lp-btn-primary lp-btn-big">Testar tudo grátis por {trialDays} dias <Arrow /></Link>
+            </div>
           </div>
         </section>
 
