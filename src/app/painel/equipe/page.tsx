@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getContext } from "@/lib/business";
 import { TeamClient } from "./team-client";
+import { HelpTip } from "@/components/help-tip";
 
 export const metadata: Metadata = { title: "Equipe" };
 
@@ -16,7 +17,7 @@ export default async function EquipePage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Equipe e horários</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Equipe e horários<HelpTip>Quem atende e em que dias e horários cada pessoa trabalha. Só aparecem para o cliente os horários livres dentro desse expediente. Trabalha sozinho? Basta você na lista.</HelpTip></h1>
         <p className="text-sm text-muted">Cada profissional tem seus dias, horários, pausas (como o almoço), serviços e folgas.</p>
       </div>
       <TeamClient timezone={business.timezone} professionals={pros ?? []} hours={hours ?? []} services={services ?? []} links={links ?? []} timeOff={off ?? []} />

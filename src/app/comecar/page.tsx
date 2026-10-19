@@ -10,7 +10,9 @@ export default async function ComecarPage() {
   const host = (await headers()).get("host") ?? "somarcar.app";
   // Nicho escolhido na página inicial (cookie sm_nicho) já vem marcado
   const nicho = (await cookies()).get("sm_nicho")?.value;
-  const defaultSegment: Segment = nicho && nicho in SEGMENTS ? (nicho as Segment) : "barbearia";
+  // Body piercing usa o nicho "Tatuagem e piercing" do cadastro
+  const fromLanding = nicho === "piercing" ? "tatuagem" : nicho;
+  const defaultSegment: Segment = fromLanding && fromLanding in SEGMENTS ? (fromLanding as Segment) : "barbearia";
   return (
     <main className="mx-auto max-w-lg px-4 py-8">
       <Logo />

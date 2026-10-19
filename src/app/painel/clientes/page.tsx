@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import { getContext } from "@/lib/business";
 import { brl, formatDate, waLink } from "@/lib/format";
+import { HelpTip } from "@/components/help-tip";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -35,7 +36,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Clientes<HelpTip>Todo mundo que já marcou com você, com telefone, visitas e quanto gastou. Os clientes entram aqui sozinhos quando agendam pela sua página.</HelpTip></h1>
           <p className="text-sm text-muted">{rows.length} {rows.length === 1 ? "cliente" : "clientes"}{q ? ` para “${q}”` : ""}</p>
         </div>
         <form className="w-full sm:w-72"><input name="q" defaultValue={q} placeholder="Buscar por nome ou telefone" className="field py-2.5" /></form>

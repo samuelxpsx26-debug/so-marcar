@@ -158,7 +158,9 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
               <div className="lp-switch" role="group" aria-label="Seu negócio">
                 <span>Seu negócio:</span>
                 {NICHES.map((n) => (
-                  <button key={n.id} type="button" className="lp-chip" aria-pressed={n.id === chosen} onClick={() => pick(n.id)}>{n.short}</button>
+                  <button key={n.id} type="button" className="lp-chip" aria-pressed={n.id === chosen} onClick={() => pick(n.id)} style={{ "--lp-dot": n.colors.accent } as CSSProperties}>
+                    <span className="lp-chip-dot" aria-hidden="true" />{n.short}
+                  </button>
                 ))}
               </div>
               <h1 id="titulo" className="lp-display">{t.h1a}<br /><span className="lp-accent">{t.h1b}</span></h1>

@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
 import { MEDIA_MAX_SIDE, type MediaKind } from "@/lib/media";
+import { HelpTip } from "./help-tip";
 
 type Result = { ok?: boolean; error?: string; url?: string | null };
 
@@ -32,9 +33,10 @@ type Props = {
   remove: () => Promise<Result>;
   onChange?: (url: string | null) => void;
   shape?: "wide" | "square" | "round";
+  help?: string;
 };
 
-export function ImageUpload({ kind, label, hint, current, upload, remove, onChange, shape = "square" }: Props) {
+export function ImageUpload({ kind, label, hint, current, upload, remove, onChange, shape = "square", help }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(current);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export function ImageUpload({ kind, label, hint, current, upload, remove, onChan
 
   return (
     <div>
-      <p className="label">{label}</p>
+      <p className="label">{label}{help && <HelpTip>{help}</HelpTip>}</p>
       <div className="flex items-center gap-3">
         <div className={`${box} shrink-0 overflow-hidden rounded-xl border border-line bg-zinc-100 ${shape === "round" ? "rounded-full" : ""}`}>
           {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <span className="grid h-full w-full place-items-center text-xs text-muted">Sem foto</span>}

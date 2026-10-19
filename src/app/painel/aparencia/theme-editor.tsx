@@ -4,6 +4,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { SEGMENTS, type Segment } from "@/lib/segments";
 import { resolveTheme, styleForSegment, THEME_STYLE_IDS, THEME_STYLES, type Theme, type ThemeStyle } from "@/lib/theme";
 import { ImageUpload } from "@/components/image-upload";
+import { HelpTip } from "@/components/help-tip";
 import { BACKDROPS, backgroundCatalog, isCatalogBackground, type CatalogItem } from "@/lib/backgrounds";
 import { removeBackground, removeCover, removeLogo, saveTheme, uploadBackground, uploadCover, uploadLogo, type R } from "./actions";
 
@@ -31,15 +32,15 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <div className="space-y-6">
       <section className="card space-y-5">
-        <ImageUpload kind="capa" shape="wide" label="Foto de capa" current={image} upload={uploadCover} remove={removeCover} onChange={setImage}
+        <ImageUpload kind="capa" shape="wide" label="Foto de capa" help="A faixa grande do topo da página, atrás do nome. Fica bem com foto na horizontal. Sem foto, usamos a arte do estilo." current={image} upload={uploadCover} remove={removeCover} onChange={setImage}
           hint="A fachada, o espaço por dentro ou um trabalho seu. Sem foto, a capa usa a arte do estilo." />
-        <ImageUpload kind="logo" label="Logo" current={logo} upload={uploadLogo} remove={removeLogo} onChange={setLogo}
+        <ImageUpload kind="logo" label="Logo" help="Seu logotipo, quadrado de preferência. Aparece em cima do nome, na capa." current={logo} upload={uploadLogo} remove={removeLogo} onChange={setLogo}
           hint="Aparece no topo da página. Sem logo, mostramos a inicial do nome." />
         <p className="text-xs text-muted">As fotos são salvas na hora, sem precisar clicar em salvar.</p>
       </section>
       <form action={action} className="card space-y-5">
         <div>
-          <p className="label">Estilo</p>
+          <p className="label">Estilo<HelpTip>O visual da página: fonte do nome, arte da capa e cores. Cada estilo combina com um tipo de negócio, mas você pode usar qualquer um.</HelpTip></p>
           <input type="hidden" name="style" value={style} />
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {THEME_STYLE_IDS.map((id) => {
@@ -60,7 +61,7 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
           <p className="mt-2 text-xs text-muted">Trocar o estilo aplica as cores dele. Depois você ajusta as cores como quiser.</p>
         </div>
         <div>
-          <p className="label">Fundo da página</p>
+          <p className="label">Fundo da página<HelpTip>O que aparece atrás de tudo na sua página. Estampas e fotos limpas deixam a página clara e leve; fotos de ambiente deixam escura e sofisticada. &quot;Sem foto&quot; usa só a cor de fundo.</HelpTip></p>
           <p className="-mt-1 mb-2 text-xs text-muted">Primeiro as opções do seu nicho: estampas, fotos limpas e fotos de ambiente.</p>
           <input type="hidden" name="bg" value={bgChoice} />
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
@@ -90,20 +91,20 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
             {otherPacks ? "Mostrar só as do seu nicho" : "Ver fundos de outros nichos"}
           </button>
           <div className="mt-4 rounded-xl border border-dashed border-line p-3">
-            <ImageUpload kind="fundo" label="Foto do seu negócio no fundo" current={uploadedBg} upload={uploadBackground} remove={removeBackground}
+            <ImageUpload kind="fundo" label="Foto do seu negócio no fundo" help="Use uma foto real do seu espaço como fundo da página inteira. Ela fica escurecida para o texto continuar legível." current={uploadedBg} upload={uploadBackground} remove={removeBackground}
               onChange={(url) => { setUploadedBg(url); setBgChoice(url ? "upload" : "auto"); }}
               hint="Uma foto do seu espaço fica ainda mais a sua cara. Ela é salva na hora e escurecida para o texto aparecer bem." />
           </div>
           <p className="mt-2 text-xs text-muted">Estampas feitas pelo Só Marcar. Fotos: Unsplash, livres para uso comercial. A página ajusta o texto e os cartões para continuar legível.</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <ColorField label="Cor dos botões" name="primary" value={primary} onChange={setPrimary} />
-          <ColorField label="Cor de fundo" name="background" value={background} onChange={setBackground} />
+          <ColorField label="Cor dos botões" name="primary" value={primary} onChange={setPrimary} help="Cor dos botões, do horário escolhido e dos destaques. Escolha uma cor que apareça bem sobre o fundo." />
+          <ColorField label="Cor de fundo" name="background" value={background} onChange={setBackground} help="Cor da página quando não há foto ou estampa no fundo. O texto fica claro ou escuro sozinho para dar leitura." />
         </div>
         {t.photo && <p className="-mt-3 text-xs text-muted">Com foto de fundo, a cor de fundo só aparece se você escolher &quot;Sem foto&quot;.</p>}
         {t.lowContrastPrimary && <p className="rounded-xl bg-amber-50 p-3 text-sm text-warn">A cor dos botões está muito parecida com o fundo. Seus clientes podem ter dificuldade para ver.</p>}
         <div>
-          <label className="label" htmlFor="description">Frase de apresentação</label>
+          <label className="label" htmlFor="description">Frase de apresentação<HelpTip>Uma ou duas linhas embaixo do nome, dizendo o que você faz e onde. Ajuda o cliente a ter certeza de que está no lugar certo.</HelpTip></label>
           <textarea id="description" name="description" rows={2} maxLength={1000} className="field" defaultValue={description ?? ""} placeholder="Ex.: Cortes clássicos e modernos no centro de Campinas." />
         </div>
         {state.error && <p role="alert" className="text-sm text-bad">{state.error}</p>}
@@ -113,7 +114,7 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
       </div>
 
       <div className="lg:sticky lg:top-8 lg:self-start">
-        <p className="label">Prévia</p>
+        <p className="label">Prévia<HelpTip>Mostra como o cliente vai ver a página com o que você escolheu. Só vale depois de clicar em &quot;Salvar aparência&quot; (as fotos salvam na hora).</HelpTip></p>
         <div className="overflow-hidden rounded-[2rem] border-8 border-zinc-900 bg-cover bg-center shadow-xl" style={{ backgroundColor: t.ground, backgroundImage: t.backgroundImage, ...(t.backdrop ?? {}), color: t.text, textShadow: t.halo, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
           <div className="space-y-3 p-4" style={{ minHeight: 420 }}>
             <div className="flex min-h-32 flex-col justify-end gap-2 rounded-2xl p-4 text-white" style={{ textShadow: "none", backgroundColor: "#0b0b0e", backgroundImage: t.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
@@ -146,10 +147,10 @@ function BackdropTile({ item, picked, onPick }: { item: CatalogItem; picked: boo
   );
 }
 
-function ColorField({ label, name, value, onChange }: { label: string; name: string; value: string; onChange: (v: string) => void }) {
+function ColorField({ label, name, value, onChange, help }: { label: string; name: string; value: string; onChange: (v: string) => void; help?: string }) {
   return (
     <div>
-      <label className="label" htmlFor={name}>{label}</label>
+      <label className="label" htmlFor={name}>{label}{help && <HelpTip>{help}</HelpTip>}</label>
       <div className="flex items-center gap-2 rounded-xl border border-line p-1.5">
         <input id={name} type="color" value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-12 cursor-pointer rounded-lg border-0 bg-transparent" />
         <input name={name} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-transparent font-mono text-sm outline-none" maxLength={7} />

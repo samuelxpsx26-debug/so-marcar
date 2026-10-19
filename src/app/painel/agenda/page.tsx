@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getContext } from "@/lib/business";
 import { addDays, formatDate, localDate, zonedToUtc } from "@/lib/format";
 import { AgendaClient, type AgendaAppt } from "./agenda-client";
+import { HelpTip } from "@/components/help-tip";
 
 export const metadata: Metadata = { title: "Agenda" };
 
@@ -46,7 +47,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Agenda<HelpTip>Todos os horários marcados, por dia e por profissional. Clique num horário para ver o cliente, confirmar, remarcar ou marcar falta. Você também pode bloquear horários por aqui.</HelpTip></h1>
           <p className="text-sm text-muted">
             {view === "mes" ? formatDate(`${start}T12:00:00Z`, "UTC", { month: "long", year: "numeric" })
               : view === "semana" ? `${formatDate(`${start}T12:00:00Z`, "UTC", { day: "numeric", month: "short" })} a ${formatDate(`${addDays(start, 6)}T12:00:00Z`, "UTC", { day: "numeric", month: "short" })}`

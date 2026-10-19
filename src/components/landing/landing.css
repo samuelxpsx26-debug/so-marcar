@@ -90,12 +90,17 @@
 .lp-hero-copy { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 .lp-hero h1 { margin: 0; font-size: clamp(44px, 6.6vw, 88px); line-height: 0.97; }
 .lp-hero p { margin: 0; max-width: 560px; font-size: 19px; line-height: 1.55; color: var(--lp-muted); }
-.lp-switch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--lp-muted); }
+.lp-switch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; font-weight: 600; color: var(--lp-muted); }
 .lp-chip {
-  appearance: none; font: inherit; cursor: pointer; min-height: 36px; padding: 0 12px; border-radius: 999px;
-  font-size: 13px; font-weight: 700; background: transparent; color: var(--lp-ink); border: 1px solid var(--lp-line);
+  appearance: none; font: inherit; cursor: pointer; min-height: 42px; padding: 0 16px 0 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 800; background: var(--lp-panel); color: var(--lp-ink); border: 1px solid var(--lp-line);
+  transition: border-color .15s, transform .15s;
 }
+.lp-chip:hover { border-color: var(--lp-dot); transform: translateY(-1px); }
+.lp-chip-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--lp-dot); box-shadow: 0 0 10px var(--lp-dot); }
 .lp-chip[aria-pressed="true"] { background: var(--lp-accent); color: var(--lp-accent-ink); border-color: var(--lp-accent); }
+.lp-chip[aria-pressed="true"] .lp-chip-dot { background: var(--lp-accent-ink); box-shadow: none; }
 .lp-row { display: flex; gap: 12px; flex-wrap: wrap; }
 
 /* Celular de exemplo */
@@ -194,3 +199,8 @@
   .lp-ask { padding-top: 56px; padding-bottom: 64px; }
   .lp-tile-cover { height: 88px; }
 }
+
+/* Seis nichos: 3 por linha no computador, sem cartão sobrando sozinho */
+@media (min-width: 900px) { .lp-tiles { grid-template-columns: repeat(3, 1fr); max-width: 980px; margin-left: auto; margin-right: auto; } }
+/* "Seu negócio:" em cima e os nichos todos numa fileira */
+.lp-switch > span:first-child { flex-basis: 100%; font-size: 13px; letter-spacing: .02em; }

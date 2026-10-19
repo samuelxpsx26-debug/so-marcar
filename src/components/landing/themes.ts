@@ -1,7 +1,7 @@
 // Temas da página inicial: um por nicho, mais o neutro ("outro") que aparece antes da escolha.
 // As fontes vêm de next/font (variáveis CSS definidas em fonts.ts).
 
-export type NicheId = "barbearia" | "salao" | "tatuagem" | "personal" | "outro";
+export type NicheId = "barbearia" | "salao" | "tatuagem" | "piercing" | "personal" | "outro";
 
 export type Niche = {
   id: NicheId;
@@ -179,7 +179,7 @@ export const NICHES: Niche[] = [
     name: "Tatuagem",
     short: "Tatuagem",
     tileWord: "Tinta & Neon",
-    examples: "Estúdios de tattoo e piercing",
+    examples: "Estúdios de tattoo e flash",
     h1a: "Sua arte merece",
     h1b: "agenda à altura.",
     sub: "Sessões longas, avaliação marcada e cliente que não esquece o horário. Sem caderninho, sem mensagem perdida.",
@@ -213,6 +213,48 @@ export const NICHES: Niche[] = [
       rowBg: "rgba(255,255,255,.04)",
       bg: "radial-gradient(820px 520px at 82% 6%, rgba(255,77,120,.20), transparent 60%), radial-gradient(600px 420px at 5% 70%, rgba(90,60,255,.12), transparent 60%), repeating-linear-gradient(135deg, rgba(255,255,255,.02) 0 1px, transparent 1px 14px), #0a0a0c",
       cover: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.82)), repeating-linear-gradient(135deg, rgba(255,77,120,.35) 0 2px, transparent 2px 18px), radial-gradient(circle at 70% 30%, #3a1a3f, #0b0b10 75%)",
+    },
+    type: { display: "var(--font-archivo-black), sans-serif", weight: 400, style: "normal", transform: "uppercase", tracking: "-0.02em" },
+  },
+  {
+    id: "piercing",
+    name: "Body piercing",
+    short: "Body piercing",
+    tileWord: "Aço & Brilho",
+    examples: "Piercers, joias e perfuração",
+    h1a: "Cada furo no lugar,",
+    h1b: "cada horário também.",
+    sub: "Perfuração, troca de joia e retorno marcados pelo seu link. O cliente escolhe o horário, recebe lembrete e volta na hora certa da troca.",
+    cta: "Bora brilhar a agenda?",
+    bizKind: "Estúdio de piercing",
+    bizName: "Pierce Co.",
+    pro: "Nina",
+    clientWord: "cliente",
+    clientPlural: "clientes",
+    notice: "Júlia marcou perfuração",
+    forWho: "Feito para body piercer",
+    painTitle: "Menos direct perdido, mais perfuração marcada.",
+    pains: ["Pedido de horário perdido no direct", "Cliente esquece o retorno da troca de joia", "Encaixe que vira atraso no estúdio inteiro"],
+    gains: ["Perfuração e troca marcadas pelo link", "Lembrete do retorno na época certa", "Tempo de cada procedimento bloqueado na agenda"],
+    services: [["Perfuração + joia", "30 min", "R$ 120"], ["Troca de joia", "15 min", "R$ 40"], ["Retorno e avaliação", "15 min", "Grátis"]],
+    colors: {
+      ground: "#0b0d10",
+      ink: "#eef3f6",
+      muted: "#9aa6ad",
+      accent: "#5eead4",
+      accentInk: "#022620",
+      line: "rgba(238,243,246,.11)",
+      accentLine: "rgba(94,234,212,.45)",
+      accentSoft: "rgba(94,234,212,.13)",
+      glow: "rgba(94,234,212,.28)",
+      panel: "rgba(255,255,255,.035)",
+      panelStrong: "#11151a",
+      band: "rgba(255,255,255,.015)",
+      headerBg: "rgba(11,13,16,.78)",
+      phoneBg: "#101317",
+      rowBg: "rgba(255,255,255,.04)",
+      bg: "radial-gradient(820px 520px at 84% 4%, rgba(94,234,212,.18), transparent 60%), radial-gradient(640px 440px at 4% 72%, rgba(186,196,210,.10), transparent 60%), radial-gradient(circle at 1px 1px, rgba(255,255,255,.05) 1px, transparent 1.5px) 0 0/22px 22px, #0b0d10",
+      cover: "linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.8)), radial-gradient(circle at 70% 28%, rgba(94,234,212,.55), transparent 40%), radial-gradient(circle at 30% 70%, #3b4450, #0b0d10 75%)",
     },
     type: { display: "var(--font-archivo-black), sans-serif", weight: 400, style: "normal", transform: "uppercase", tracking: "-0.02em" },
   },

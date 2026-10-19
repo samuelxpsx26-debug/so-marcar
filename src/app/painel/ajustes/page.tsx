@@ -7,6 +7,7 @@ import { reconcileBusinessSubscription } from "@/lib/billing/sync";
 import { createServiceClient } from "@/lib/supabase/server";
 import { SettingsForm, CancelButton } from "./settings-client";
 import { openBillingPortal, startCheckout } from "./billing-actions";
+import { HelpTip } from "@/components/help-tip";
 
 const NOTICES: Record<string, string> = {
   retorno: "Recebemos seu retorno do pagamento. Assim que a Stripe confirmar, sua assinatura aparece como ativa aqui. Atualize a página em instantes.",
@@ -46,13 +47,13 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Ajustes</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Ajustes<HelpTip>Dados do negócio que aparecem para o cliente, as regras que a agenda segue sozinha e a sua assinatura do Só Marcar.</HelpTip></h1>
         <p className="text-sm text-muted">Dados do negócio, regras de agendamento e assinatura.</p>
       </div>
       <SettingsForm business={business} />
 
       <section id="assinatura" className="card space-y-3">
-        <h2 className="text-lg font-bold">Assinatura</h2>
+        <h2 className="text-lg font-bold">Assinatura<HelpTip>O seu plano do Só Marcar: {brl(price)} por mês, sem comissão. O primeiro mês é grátis e você recebe um aviso antes da primeira cobrança. &quot;Cartão e faturas&quot; abre a área segura da Stripe para trocar o cartão e ver recibos.</HelpTip></h2>
         {assinatura && NOTICES[assinatura] && !(assinatura === "retorno" && paid) && sub?.status !== "active" && <p className="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">{NOTICES[assinatura]}</p>}
         {testMode && role === "owner" && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Modo de teste da Stripe: nenhuma cobrança é real. Use o cartão 4242 4242 4242 4242, qualquer validade futura e qualquer CVC.</p>}
         {sub?.status === "trialing" && (
