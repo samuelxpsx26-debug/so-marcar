@@ -70,3 +70,12 @@ export async function createAppointment(_: ActionResult, form: FormData): Promis
   revalidatePath("/painel", "layout");
   return { ok: true };
 }
+
+/** Pix do sinal conferido (ou sinal dispensado): a reserva fica confirmada */
+export async function confirmDeposit(id: string, waive = false): Promise<ActionResult> {
+  const { supabase } = await getContext();
+  const { error } = await supabase.rpc("confirm_deposit", { p_appointment: id, p_waive: waive });
+  if (error) return { error: ["22023", "23P01", "P0002"].includes(error.code) ? error.message : "Não foi possível confirmar. Tente de novo." };
+  revalidatePath("/painel", "layout");
+  return { ok: true };
+}

@@ -3,11 +3,13 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { addDays, brl, formatTime, localDate, waLink } from "@/lib/format";
 import { SubmitButton } from "@/components/submit-button";
-import { createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
+import { confirmDeposit, createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
+import { notify } from "@/lib/notify-client";
 
 export type AgendaAppt = {
   id: string; starts_at: string; ends_at: string; status: string; source: string; price_cents: number; notes: string | null;
-  professional_id: string; service_id: string; rescheduled_from: string | null;
+  professional_id: string; service_id: string; rescheduled_from: string | null; manage_token?: string;
+  deposit_cents?: number; deposit_status?: "none" | "awaiting" | "paid" | "waived"; deposit_due_at?: string | null;
   customer: { id: string; name: string; phone: string } | null;
   service: { name: string } | null;
 };
@@ -28,6 +30,9 @@ const statusStyle: Record<string, string> = {
   no_show: "border-red-300 bg-red-50 text-red-900 line-through",
 };
 const statusLabel: Record<string, string> = { confirmed: "Confirmado", pending: "Aguardando", completed: "Atendido", no_show: "Faltou", cancelled: "Cancelado" };
+
+const awaitingDeposit = (a: AgendaAppt) => a.status === "pending" && a.deposit_status === "awaiting";
+const label = (a: AgendaAppt) => (awaitingDeposit(a) ? "Aguardando sinal" : statusLabel[a.status]);
 
 const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 const minutesInTz = (iso: string, tz: string) => toMin(formatTime(iso, tz));
@@ -110,7 +115,7 @@ function DayView({ date, timezone, professionals, hours, appointments, onSelect,
                         style={{ top: (s - dayStart) * PX_PER_MIN, height: Math.max(22, (e - s) * PX_PER_MIN - 2) }}
                       >
                         <p className="truncate font-semibold">{formatTime(a.starts_at, timezone)} {a.customer?.name}</p>
-                        <p className="truncate opacity-75">{a.service?.name}</p>
+                        <p className="truncate opacity-75">{awaitingDeposit(a) ? "aguardando sinal" : a.service?.name}</p>
                       </button>
                     );
                   })}
@@ -142,6 +147,7 @@ function WeekView({ start, today, timezone, appointments, onSelect, professional
               {list.map((a) => (
                 <button key={a.id} onClick={() => onSelect(a)} className={`block w-full rounded-lg border px-2 py-1 text-left text-xs ${statusStyle[a.status] ?? ""}`}>
                   <span className="font-semibold">{formatTime(a.starts_at, timezone)}</span> {a.customer?.name}
+                  {awaitingDeposit(a) && <span className="block text-[11px] font-medium text-amber-700">aguardando sinal</span>}
                   {professionals.length > 1 && <span className="block truncate opacity-70">{names[a.professional_id]}</span>}
                 </button>
               ))}
@@ -225,9 +231,24 @@ function ApptSheet({ a, p, onClose }: { a: AgendaAppt; p: Props; onClose: () => 
     <Sheet title={a.customer?.name ?? "Atendimento"} onClose={onClose}>
       <div className="space-y-1 text-sm">
         <p><strong>{formatTime(a.starts_at, p.timezone)}–{formatTime(a.ends_at, p.timezone)}</strong> · {a.service?.name} · {brl(a.price_cents)}</p>
-        <p className="text-muted">{p.professionals.find((x) => x.id === a.professional_id)?.name} · {statusLabel[a.status]}{a.source === "public" ? " · veio pelo link" : ""}{a.rescheduled_from ? " · remarcado" : ""}</p>
+        <p className="text-muted">{p.professionals.find((x) => x.id === a.professional_id)?.name} · {label(a)}{a.source === "public" ? " · veio pelo link" : ""}{a.rescheduled_from ? " · remarcado" : ""}</p>
         {a.notes && <p className="rounded-lg bg-zinc-50 p-2">{a.notes}</p>}
+        {a.deposit_status === "paid" && !!a.deposit_cents && <p className="text-good">Sinal de {brl(a.deposit_cents)} pago · falta {brl(Math.max(a.price_cents - a.deposit_cents, 0))} no dia</p>}
       </div>
+
+      {awaitingDeposit(a) && !moving && (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">Aguardando sinal de {brl(a.deposit_cents ?? 0)} no Pix</p>
+          <p className="mt-0.5 text-amber-900">Confira no app do seu banco.{a.deposit_due_at ? ` Se não chegar até ${formatTime(a.deposit_due_at, p.timezone)}, o horário é liberado sozinho.` : ""}</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button disabled={pending} onClick={() => run(async () => { const r = await confirmDeposit(a.id); if (r.ok && a.manage_token) notify(a.manage_token); return r; })} className="btn col-span-2 bg-emerald-600 text-white">✓ Sinal recebido</button>
+            {a.customer?.phone && a.manage_token && (
+              <a target="_blank" href={waLink(a.customer.phone, `Oi, ${first}! Seu horário de ${formatTime(a.starts_at, p.timezone)} está reservado. Para confirmar, falta o sinal de ${brl(a.deposit_cents ?? 0)} no Pix. O código está aqui: ${window.location.origin}/reserva/${a.manage_token}`)} className="btn bg-[#25D366] px-3 text-xs text-white">Lembrar no WhatsApp</a>
+            )}
+            <button disabled={pending} onClick={() => confirm("Confirmar o horário sem cobrar o sinal?") && run(async () => { const r = await confirmDeposit(a.id, true); if (r.ok && a.manage_token) notify(a.manage_token); return r; })} className="btn btn-ghost px-3 text-xs">Dispensar sinal</button>
+          </div>
+        </div>
+      )}
 
       {!moving ? (
         <div className="mt-5 grid grid-cols-2 gap-2">

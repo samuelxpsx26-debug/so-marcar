@@ -25,16 +25,24 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     return new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
   })();
 
+  // Reservas com Pix vencido liberam o horário antes de montar a agenda
+  await supabase.rpc("expire_unpaid_deposits", { p_business: business.id });
+  const base = "id, starts_at, ends_at, status, source, price_cents, notes, professional_id, service_id, rescheduled_from, manage_token, customer:customers(id,name,phone), service:services(name)";
+  const query = (cols: string) => supabase.from("appointments").select(cols)
+    .eq("business_id", business.id)
+    .gte("starts_at", zonedToUtc(start, "00:00", tz).toISOString())
+    .lt("starts_at", zonedToUtc(end, "00:00", tz).toISOString())
+    .neq("status", "cancelled")
+    .order("starts_at");
+  // Antes de rodar o SQL do sinal as colunas de sinal ainda não existem
+  const loadAppts = async () => {
+    const r = await query(`${base}, deposit_cents, deposit_status, deposit_due_at`);
+    return r.error ? query(base) : r;
+  };
   const [{ data: pros }, { data: services }, { data: appts }, { data: hours }] = await Promise.all([
     supabase.from("professionals").select("id, name").eq("business_id", business.id).eq("active", true).order("sort_order").order("name"),
     supabase.from("services").select("id, name, duration_minutes, price_cents").eq("business_id", business.id).eq("active", true).order("sort_order").order("name"),
-    supabase.from("appointments")
-      .select("id, starts_at, ends_at, status, source, price_cents, notes, professional_id, service_id, rescheduled_from, customer:customers(id,name,phone), service:services(name)")
-      .eq("business_id", business.id)
-      .gte("starts_at", zonedToUtc(start, "00:00", tz).toISOString())
-      .lt("starts_at", zonedToUtc(end, "00:00", tz).toISOString())
-      .neq("status", "cancelled")
-      .order("starts_at"),
+    loadAppts(),
     supabase.from("working_hours").select("professional_id, weekday, start_time, end_time").eq("business_id", business.id),
   ]);
 

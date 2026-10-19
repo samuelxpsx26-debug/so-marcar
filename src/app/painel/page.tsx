@@ -32,6 +32,8 @@ export default async function HojePage({ searchParams }: { searchParams: Promise
   const bookingUrl = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}/${business.slug}`;
   const { bemvindo } = await searchParams;
 
+  // Reservas com Pix vencido liberam o horário (e podem abrir vaga para a lista de espera)
+  await supabase.rpc("expire_unpaid_deposits", { p_business: business.id });
   const select = "id, starts_at, ends_at, status, source, price_cents, rescheduled_from, customer:customers(id,name,phone), service:services(name), professional:professionals(name)";
   const [{ data: recent }, { data: upcoming }, { data: sub }, { data: services }] = await Promise.all([
     supabase.from("appointments").select(select).eq("business_id", business.id).gte("starts_at", since.toISOString()).lt("starts_at", afterTomorrow.toISOString()).order("starts_at"),

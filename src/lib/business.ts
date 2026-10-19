@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Segment } from "@/lib/segments";
 import type { Theme } from "@/lib/theme";
+import type { PixKeyType } from "@/lib/pix";
 
 export type Business = {
   id: string; name: string; slug: string; segment: Segment; description: string | null; timezone: string;
@@ -12,6 +13,9 @@ export type Business = {
   min_notice_minutes: number; max_days_ahead: number; slot_step_minutes: number; cancel_notice_minutes: number;
   cancellation_policy: string | null;
   address: { text?: string } | null;
+  // Sinal por Pix (ausentes enquanto o SQL do sinal não roda no banco)
+  deposit_mode?: "off" | "percent" | "fixed"; deposit_value?: number; deposit_hold_minutes?: number;
+  pix_key_type?: PixKeyType | null; pix_key?: string | null; pix_holder?: string | null; pix_city?: string | null;
 };
 export type Role = "owner" | "admin" | "professional";
 

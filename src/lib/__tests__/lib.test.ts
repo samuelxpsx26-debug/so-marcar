@@ -8,6 +8,7 @@ import { mediaPathFromUrl, sniffImage } from "../media";
 import { BACKDROPS, backgroundCatalog } from "../backgrounds";
 import { PATTERNS } from "../patterns";
 import { inPeriod, openTimes, waitlistOpenings } from "../waitlist";
+import { crc16, depositCents, normalizePixKey, pixPayload } from "../pix";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -224,5 +225,38 @@ describe("lista de espera", () => {
     expect(ops[0].valueCents).toBe(4500);
     expect(ops[0].contacts?.[0].waitlistId).toBe("a");
     expect(ops[0].contacts?.[0].message).toContain("Oi, Ana! Abriu horário para Corte amanhã no Barbearia Zé: 10:00, 11:00");
+  });
+});
+
+describe("pix", () => {
+  it("gera o BR Code oficial de exemplo do Banco Central", () => {
+    const body = "00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***6304";
+    expect(crc16(body)).toBe("1D3D");
+    expect(pixPayload({ key: "123e4567-e12b-12d1-a456-426655440000", name: "Fulano de Tal", city: "BRASILIA" })).toBe(body + "1D3D");
+  });
+
+  it("inclui valor e identificador e tira acentos", () => {
+    const p = pixPayload({ key: "+5511999990000", name: "Estúdio Ação & Cia", city: "São Paulo", amountCents: 1250, txid: "SM-ab12" });
+    expect(p).toContain("540512.50");
+    expect(p).toContain("5916Estudio Acao Cia");
+    expect(p).toContain("6009Sao Paulo");
+    expect(p).toContain("62100506SMab12");
+    expect(p.slice(-4)).toBe(crc16(p.slice(0, -4)));
+  });
+
+  it("valida e normaliza chaves", () => {
+    expect(normalizePixKey("cpf", "529.982.247-25")).toBe("52998224725");
+    expect(normalizePixKey("cpf", "111.111.111-11")).toBeNull();
+    expect(normalizePixKey("cnpj", "11.222.333/0001-81")).toBe("11222333000181");
+    expect(normalizePixKey("telefone", "(11) 99999-0000")).toBe("+5511999990000");
+    expect(normalizePixKey("email", "Dono@Barbearia.com")).toBe("dono@barbearia.com");
+    expect(normalizePixKey("aleatoria", "nao-e-chave")).toBeNull();
+  });
+
+  it("calcula o sinal", () => {
+    expect(depositCents("percent", 30, 5000)).toBe(1500);
+    expect(depositCents("fixed", 2000, 5000)).toBe(2000);
+    expect(depositCents("fixed", 9000, 5000)).toBe(5000);
+    expect(depositCents("off", 30, 5000)).toBe(0);
   });
 });

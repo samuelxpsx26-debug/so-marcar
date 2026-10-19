@@ -7,9 +7,11 @@ import { notify } from "@/lib/notify-client";
 import { brl, formatDate, formatTime, waLink } from "@/lib/format";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import type { ResolvedTheme } from "@/components/booking/types";
+import { PixPayment, type DepositInfo } from "@/components/booking/pix-payment";
 
 export type BookingInfo = {
   id: string; status: string; starts_at: string; ends_at: string; customer_name: string; can_change: boolean;
+  deposit?: DepositInfo;
   service: { id: string; name: string; duration_minutes: number; price_cents: number };
   professional: { id: string; name: string };
   business: { name: string; slug: string; timezone: string; theme: { primary?: string; background?: string }; whatsapp: string | null; cancel_notice_minutes: number; cancellation_policy: string | null };
@@ -25,6 +27,9 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
   const tz = info.business.timezone;
   const soft = theme.surface;
   const primary = { background: theme.primary, color: theme.onPrimary };
+  const dep = info.deposit;
+  const expired = dep?.status === "expired" && info.status === "pending";
+  const label = expired ? "Sinal não pago a tempo" : info.status === "pending" && dep?.status === "awaiting" ? "Aguardando o sinal" : statusText[info.status];
 
   async function cancel() {
     if (!confirm("Cancelar seu horário?")) return;
@@ -50,10 +55,23 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
       <p className="text-sm opacity-70">{info.business.name}</p>
       <h1 className="mt-1 text-2xl font-bold">Olá, {info.customer_name.split(" ")[0]}!</h1>
       <div className="mt-5 rounded-2xl p-5" style={{ background: soft }}>
-        <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{statusText[info.status]}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
         <p className="mt-1 text-lg font-semibold">{formatDate(info.starts_at, tz)} às {formatTime(info.starts_at, tz)}</p>
         <p className="opacity-80">{info.service.name} com {info.professional.name} · {brl(info.service.price_cents)}</p>
+        {dep && (dep.status === "paid" || dep.status === "waived") && dep.cents > 0 && (
+          <p className="mt-2 text-sm font-medium">{dep.status === "paid" ? `Sinal de ${brl(dep.cents)} pago ✓ · falta ${brl(Math.max(info.service.price_cents - dep.cents, 0))} no dia` : "Sinal dispensado pelo estabelecimento"}</p>
+        )}
       </div>
+
+      {info.status === "pending" && dep?.status === "awaiting" && dep.pix && (
+        <div className="mt-5">
+          <PixPayment deposit={dep} bookingId={info.id} theme={theme} timezone={tz} businessName={info.business.name} whatsapp={info.business.whatsapp}
+            waText={`Oi! Sou ${info.customer_name} e paguei o sinal de ${brl(dep.cents)} para ${info.service.name} em ${formatDate(info.starts_at, tz, { day: "numeric", month: "numeric" })} às ${formatTime(info.starts_at, tz)}.`} />
+        </div>
+      )}
+      {expired && (
+        <p className="mt-5 rounded-2xl p-4 text-sm" style={{ background: soft }}>O prazo para pagar o sinal acabou e o horário foi liberado. Se você já pagou, {info.business.whatsapp ? <a className="underline" href={waLink(info.business.whatsapp, `Oi! Sou ${info.customer_name} e paguei o sinal de ${brl(dep!.cents)} para ${formatDate(info.starts_at, tz, { day: "numeric", month: "numeric" })} às ${formatTime(info.starts_at, tz)}.`)}>fale com {info.business.name}</a> : `fale com ${info.business.name}`}. Se não, é só marcar de novo.</p>
+      )}
 
       {info.can_change && mode === "view" && (
         <div className="mt-5 space-y-2">
@@ -69,10 +87,10 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
             onPick={(s) => !busy && move(s.starts_at, s.professional_id)} />
         </div>
       )}
-      {!info.can_change && (info.status === "confirmed" || info.status === "pending") && (
+      {!info.can_change && !expired && (info.status === "confirmed" || info.status === "pending") && (
         <p className="mt-5 text-sm opacity-80">O prazo para remarcar pelo link já passou.{info.business.whatsapp && <> <a className="underline" href={waLink(info.business.whatsapp, `Oi! Preciso falar sobre meu horário de ${formatTime(info.starts_at, tz)}.`)}>Fale com {info.business.name}</a>.</>}</p>
       )}
-      {info.status === "cancelled" && (
+      {(info.status === "cancelled" || expired) && (
         <Link href={`/${info.business.slug}`} className="mt-5 block rounded-2xl py-4 text-center font-bold" style={primary}>Agendar outro horário</Link>
       )}
       {error && <p role="alert" className="mt-4 rounded-xl bg-red-500/15 p-3 text-sm">{error}</p>}

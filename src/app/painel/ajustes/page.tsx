@@ -6,6 +6,7 @@ import { billingConfigured, stripeMode } from "@/lib/billing/stripe";
 import { reconcileBusinessSubscription } from "@/lib/billing/sync";
 import { createServiceClient } from "@/lib/supabase/server";
 import { SettingsForm, CancelButton } from "./settings-client";
+import { DepositForm } from "./deposit-form";
 import { openBillingPortal, startCheckout } from "./billing-actions";
 import { HelpTip } from "@/components/help-tip";
 
@@ -35,6 +36,7 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
   const first = await subQuery(`${base}, last_payment_error`);
   const sub = first.error ? (await subQuery(base)).data : first.data;
   const plan = await getPlan(supabase, sub?.plan);
+  const { data: sample } = await supabase.from("services").select("price_cents").eq("business_id", business.id).eq("active", true).order("sort_order").limit(1).maybeSingle();
   const price = sub?.price_cents ?? plan?.price_cents ?? 0;
   const canPay = billingConfigured() && role === "owner";
   const paid = Boolean(sub?.provider === "stripe" && sub.provider_subscription_id && !["canceled", "expired"].includes(sub.status));
@@ -51,6 +53,7 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
         <p className="text-sm text-muted">Dados do negócio, regras de agendamento e assinatura.</p>
       </div>
       <SettingsForm business={business} />
+      {role !== "professional" && <DepositForm business={business} examplePriceCents={sample?.price_cents ?? 5000} />}
 
       <section id="assinatura" className="card space-y-3">
         <h2 className="text-lg font-bold">Assinatura<HelpTip>O seu plano do Só Marcar: {brl(price)} por mês, sem comissão. O primeiro mês é grátis e você recebe um aviso antes da primeira cobrança. &quot;Cartão e faturas&quot; abre a área segura da Stripe para trocar o cartão e ver recibos.</HelpTip></h2>

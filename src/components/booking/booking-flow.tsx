@@ -1,13 +1,16 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { notify } from "@/lib/notify-client";
 import { brl, formatDate, formatTime, normalizePhone, waLink } from "@/lib/format";
 import { SlotPicker } from "./slot-picker";
 import { Waitlist } from "./waitlist";
 import { Input } from "./input";
+import { PixPayment, type DepositInfo } from "./pix-payment";
+import { depositCents } from "@/lib/pix";
 import type { PublicBusiness, ResolvedTheme, Slot } from "./types";
 
+type Booked = { id: string; manage_token: string; starts_at: string; deposit_cents?: number; deposit_status?: string };
 type Step = "service" | "pro" | "time" | "details" | "done" | "waitlist";
 
 export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTheme }) {
@@ -18,7 +21,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
   const [form, setForm] = useState({ name: "", phone: "", email: "", consent: true });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ manage_token: string; starts_at: string } | null>(null);
+  const [result, setResult] = useState<Booked | null>(null);
   const [waitDay, setWaitDay] = useState<string | null>(null);
   const idem = useMemo(() => crypto.randomUUID(), []);
 
@@ -27,6 +30,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
   const proName = slot?.professional_name ?? b.professionals.find((p) => p.id === proId)?.name;
   const soft = theme.surface;
   const tz = b.timezone;
+  const deposit = service && b.deposit ? depositCents(b.deposit.mode, b.deposit.value, service.price_cents) : 0;
 
   function pickService(id: string) {
     setServiceId(id);
@@ -52,8 +56,10 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
       if (error.code === "23P01") { setSlot(null); setStep("time"); }
       return;
     }
-    setResult(data as { manage_token: string; starts_at: string });
-    notify((data as { manage_token: string }).manage_token);
+    const booked = data as Booked;
+    setResult(booked);
+    // Com sinal, a confirmação por e-mail só sai depois que o dono confirmar o Pix
+    if (booked.deposit_status !== "awaiting") notify(booked.manage_token);
     setStep("done");
   }
 
@@ -128,6 +134,11 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
             <p className="font-semibold">{service.name}</p>
             <p className="text-sm opacity-80">{formatDate(slot.starts_at, tz)} às {formatTime(slot.starts_at, tz)}</p>
             <p className="text-sm opacity-80">com {proName} · {service.price_cents ? brl(service.price_cents) : "valor a combinar"}</p>
+            {deposit > 0 && (
+              <p className="mt-2 rounded-xl px-3 py-2 text-sm font-medium" style={{ background: `${theme.primary}26` }}>
+                Para garantir o horário: sinal de {brl(deposit)} no Pix{deposit < service.price_cents ? ` e ${brl(service.price_cents - deposit)} no dia` : ""}.
+              </p>
+            )}
           </div>
           <form onSubmit={confirm} className="space-y-3">
             <Input label="Seu nome" value={form.name} onChange={(v) => setForm({ ...form, name: v })} autoComplete="name" theme={theme} />
@@ -139,7 +150,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
             </label>
             {error && <p role="alert" className="rounded-xl bg-red-500/15 p-3 text-sm">{error}</p>}
             <button disabled={busy} className="w-full rounded-2xl py-4 text-base font-bold transition active:scale-[.99] disabled:opacity-60" style={primaryBtn}>
-              {busy ? "Agendando…" : "Confirmar agendamento"}
+              {busy ? "Agendando…" : deposit > 0 ? "Reservar e pagar o sinal" : "Confirmar agendamento"}
             </button>
             {b.cancellation_policy && <p className="text-xs opacity-60">{b.cancellation_policy}</p>}
           </form>
@@ -147,30 +158,45 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
       )}
 
       {step === "done" && result && slot && service && (
-        <Done b={b} theme={theme} service={service.name} proName={proName ?? ""} startsAt={result.starts_at} token={result.manage_token} customer={form.name} durationMin={service.duration_minutes} />
+        <Done b={b} theme={theme} service={service.name} proName={proName ?? ""} booked={result} customer={form.name} durationMin={service.duration_minutes} />
       )}
     </div>
   );
 }
 
-function Done({ b, theme, service, proName, startsAt, token, customer, durationMin }: { b: PublicBusiness; theme: ResolvedTheme; service: string; proName: string; startsAt: string; token: string; customer: string; durationMin: number }) {
+function Done({ b, theme, service, proName, booked, customer, durationMin }: { b: PublicBusiness; theme: ResolvedTheme; service: string; proName: string; booked: Booked; customer: string; durationMin: number }) {
+  const { starts_at: startsAt, manage_token: token } = booked;
+  const awaiting = booked.deposit_status === "awaiting";
+  const [deposit, setDeposit] = useState<DepositInfo | null | undefined>(undefined);
+  useEffect(() => {
+    if (!awaiting) return;
+    createClient().rpc("get_booking_by_token", { p_token: token }).then(({ data }) => setDeposit((data as { deposit?: DepositInfo } | null)?.deposit ?? null));
+  }, [awaiting, token]);
   const tz = b.timezone;
   const manageUrl = `${window.location.origin}/reserva/${token}`;
   const start = new Date(startsAt);
   const end = new Date(start.getTime() + durationMin * 60000);
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${service} · ${b.name}`)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(`Gerenciar: ${manageUrl}`)}${b.address?.text ? `&location=${encodeURIComponent(b.address.text)}` : ""}`;
   const soft = theme.surface;
+  const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${service} · ${b.name}`)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(`Gerenciar: ${manageUrl}`)}${b.address?.text ? `&location=${encodeURIComponent(b.address.text)}` : ""}`;
 
   return (
     <section className="text-center">
       <div className="mx-auto grid h-16 w-16 place-items-center rounded-full text-3xl" style={{ background: theme.primary, color: theme.onPrimary }}>✓</div>
-      <h2 className="mt-4 text-2xl font-bold">Agendado!</h2>
+      <h2 className="mt-4 text-2xl font-bold">{awaiting ? "Horário reservado!" : "Agendado!"}</h2>
       <p className="mt-2 opacity-80">{formatDate(startsAt, tz)} às {formatTime(startsAt, tz)}</p>
       <p className="opacity-80">{service} com {proName}</p>
+      {awaiting && (
+        <div className="mt-6 text-left">
+          {deposit === undefined ? <div className="h-96 animate-pulse rounded-2xl" style={{ background: soft }} />
+            : deposit?.pix ? <PixPayment deposit={deposit} bookingId={booked.id} theme={theme} timezone={tz} businessName={b.name} whatsapp={b.whatsapp}
+                waText={`Oi! Sou ${customer} e paguei o sinal de ${brl(deposit.cents)} para ${service} em ${formatDate(startsAt, tz, { day: "numeric", month: "numeric" })} às ${formatTime(startsAt, tz)}.`} />
+            : <p className="rounded-2xl p-4 text-sm" style={{ background: soft }}>Abra o link &quot;Remarcar ou cancelar&quot; abaixo para ver como pagar o sinal.</p>}
+        </div>
+      )}
       <div className="mt-6 space-y-2 text-left">
         <a href={gcal} target="_blank" className="block rounded-2xl p-4 font-medium" style={{ background: soft }}>📅 Adicionar à minha agenda</a>
-        {b.whatsapp && (
+        {b.whatsapp && !awaiting && (
           <a href={waLink(b.whatsapp, `Oi! Sou ${customer} e acabei de agendar ${service} para ${formatDate(startsAt, tz, { day: "numeric", month: "numeric" })} às ${formatTime(startsAt, tz)}.`)} target="_blank" className="block rounded-2xl p-4 font-medium" style={{ background: soft }}>
             💬 Avisar {b.name} no WhatsApp
           </a>

@@ -6,6 +6,7 @@ export type PublicBusiness = {
   whatsapp: string | null; phone: string | null; address: { text?: string } | null;
   theme: { primary?: string; background?: string; image?: string | null; logo?: string | null; style?: ThemeStyle; bg?: string | null };
   cancellation_policy: string | null; max_days_ahead: number; cancel_notice_minutes: number; active: boolean;
+  deposit?: { mode: "off" | "percent" | "fixed"; value: number; hold_minutes: number };
   services: PublicService[]; professionals: PublicPro[];
 };
 export type Slot = { professional_id: string; professional_name: string; starts_at: string };

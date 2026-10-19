@@ -37,6 +37,8 @@ export async function processNotifications(opts: { manageToken?: string; limit?:
 
   const db = createServiceClient();
   const now = new Date();
+  // Reservas com sinal vencido são canceladas antes (e seus e-mails pulados)
+  await db.rpc("expire_unpaid_deposits", {}).then(() => null, () => null);
   const early = new Date(now.getTime() + REMINDER_EARLY_HOURS * 3_600_000).toISOString();
   let q = db.from("notification_jobs")
     .select(`id, kind, channel, attempts, appointment:appointments!inner(status, starts_at, manage_token,
@@ -52,6 +54,8 @@ export async function processNotifications(opts: { manageToken?: string; limit?:
 
   for (const job of (data ?? []) as unknown as Job[]) {
     const a = job.appointment;
+    // "Pendente" = esperando o Pix do sinal: o lembrete espera a confirmação
+    if (a?.status === "pending" && new Date(a.starts_at) > now) continue;
     const skip = !a || !a.customer?.email || !a.business || !SENDABLE.includes(job.kind as EmailKind)
       || !["pending", "confirmed"].includes(a.status) || new Date(a.starts_at) <= now;
     if (skip) {
