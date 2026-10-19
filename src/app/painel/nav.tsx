@@ -8,6 +8,7 @@ const items = [
   { href: "/painel/agenda", label: "Agenda", icon: "M4 6h16v14H4zM4 10h16M9 3v4M15 3v4" },
   { href: "/painel/clientes", label: "Clientes", icon: "M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" },
   { href: "/painel/espera", label: "Lista de espera", icon: "M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" },
+  { href: "/painel/campanhas", label: "Campanhas", icon: "M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" },
   { href: "/painel/relatorios", label: "Relatórios", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
   { href: "/painel/servicos", label: "Serviços", icon: "M4 7h16M4 12h16M4 17h10" },
   { href: "/painel/equipe", label: "Equipe", icon: "M17 20v-1a4 4 0 0 0-3-3.9M7 20v-1a4 4 0 0 1 8 0M11 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 11a2.5 2.5 0 1 0 0-5" },

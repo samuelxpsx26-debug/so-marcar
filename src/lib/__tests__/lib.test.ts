@@ -329,3 +329,22 @@ describe("relatório com pacotes", () => {
     expect(r.avgTicket).toBe(0);
   });
 });
+
+describe("campanha quem não volta", async () => {
+  const { lapsedCustomers, fillMessage } = await import("../campaign");
+  const now = new Date("2026-10-19T12:00:00Z");
+  const appt = (d: string, status = "completed", price_cents = 4000) => ({ starts_at: `${d}T12:00:00Z`, status, price_cents });
+  it("lista só quem sumiu e não tem horário marcado", () => {
+    const r = lapsedCustomers([
+      { id: "a", name: "Ana", phone: "1", consent: true, appointments: [appt("2026-08-01"), appt("2026-07-01")] },
+      { id: "b", name: "Bia", phone: "2", consent: true, appointments: [appt("2026-10-10")] },
+      { id: "c", name: "Cai", phone: "3", consent: true, appointments: [appt("2026-07-01"), appt("2026-10-25", "confirmed")] },
+      { id: "d", name: "Duda", phone: "4", consent: false, appointments: [appt("2026-06-01", "completed", 9000)] },
+    ], 45, now);
+    expect(r.map((x) => x.id)).toEqual(["d", "a"]);
+    expect(r.find((x) => x.id === "a")).toMatchObject({ visits: 2, spentCents: 8000, daysSince: 79 });
+  });
+  it("preenche a mensagem", () => {
+    expect(fillMessage("Oi, {nome}! {negocio} {link} {dias}", { name: "Ana Paula", business: "Barbearia", link: "x.com/b", days: 50 })).toBe("Oi, Ana! Barbearia x.com/b 50");
+  });
+});
