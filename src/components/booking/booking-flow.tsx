@@ -30,13 +30,30 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
   const [waitDay, setWaitDay] = useState<string | null>(null);
   const idem = useMemo(() => crypto.randomUUID(), []);
   const [remembered, setRemembered] = useState(() => form.phone !== "");
+  // Cupom: pode vir no link (?cupom=VOLTA10, usado nas campanhas) ou ser digitado
+  const [couponInput, setCouponInput] = useState(() => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("cupom") ?? "").toUpperCase());
+  const [couponOpen, setCouponOpen] = useState(() => couponInput !== "");
+  const [coupon, setCoupon] = useState<{ code: string; serviceId: string; discount: number } | null>(null);
+  const [couponMsg, setCouponMsg] = useState<string | null>(null);
 
   const service = b.services.find((s) => s.id === serviceId);
   const pros = b.professionals.filter((p) => !serviceId || p.service_ids.length === 0 || p.service_ids.includes(serviceId));
   const proName = slot?.professional_name ?? b.professionals.find((p) => p.id === proId)?.name;
   const soft = theme.surface;
   const tz = b.timezone;
-  const deposit = service && b.deposit ? depositCents(b.deposit.mode, b.deposit.value, service.price_cents) : 0;
+  const discount = coupon && coupon.serviceId === serviceId ? coupon.discount : 0;
+  const price = service ? service.price_cents - discount : 0;
+  const deposit = service && b.deposit ? depositCents(b.deposit.mode, b.deposit.value, price) : 0;
+
+  async function applyCoupon(code = couponInput, sid = serviceId) {
+    const clean = code.trim().toUpperCase();
+    if (!clean || !sid) return;
+    setCouponMsg(null);
+    const { data, error } = await createClient().rpc("check_coupon", { p_slug: b.slug, p_code: clean, p_service: sid, p_phone: form.phone || null });
+    if (error) { setCoupon(null); setCouponMsg(error.code === "22023" ? error.message : "Não foi possível conferir o cupom agora."); return; }
+    const r = data as { code: string; discount_cents: number };
+    setCoupon({ code: r.code, serviceId: sid, discount: r.discount_cents });
+  }
 
   function pickService(id: string) {
     setServiceId(id);
@@ -55,6 +72,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
     const { data, error } = await createClient().rpc("create_public_booking", {
       p_slug: b.slug, p_service: serviceId, p_professional: slot.professional_id, p_starts_at: slot.starts_at,
       p_name: form.name, p_phone: form.phone, p_email: form.email || null, p_idempotency_key: idem, p_marketing_consent: form.consent,
+      p_coupon: discount > 0 ? coupon!.code : null,
     });
     setBusy(false);
     if (error) {
@@ -151,7 +169,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
           {back(pros.length > 1 ? "pro" : "service")}
           <h2 className="mb-3 text-lg font-semibold">Escolha o horário</h2>
           <SlotPicker slug={b.slug} serviceId={serviceId} professionalId={proId} timezone={tz} maxDays={b.max_days_ahead} theme={theme} selected={slot}
-            onPick={(s) => { setSlot(s); setStep("details"); }} onWaitlist={(d) => { setWaitDay(d); setStep("waitlist"); }} />
+            onPick={(s) => { setSlot(s); setStep("details"); if (couponInput && coupon?.serviceId !== serviceId) applyCoupon(); }} onWaitlist={(d) => { setWaitDay(d); setStep("waitlist"); }} />
         </section>
       )}
 
@@ -168,10 +186,11 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
           <div className="mb-4 rounded-2xl p-4" style={{ background: soft }}>
             <p className="font-semibold">{service.name}</p>
             <p className="text-sm opacity-80">{formatDate(slot.starts_at, tz)} às {formatTime(slot.starts_at, tz)}</p>
-            <p className="text-sm opacity-80">com {proName} · {service.price_cents ? brl(service.price_cents) : "valor a combinar"}</p>
+            <p className="text-sm opacity-80">com {proName} · {service.price_cents ? (discount > 0 ? <><s className="opacity-60">{brl(service.price_cents)}</s> <strong>{brl(price)}</strong></> : brl(service.price_cents)) : "valor a combinar"}</p>
+            {discount > 0 && <p className="mt-1 text-sm font-medium">🏷️ Cupom {coupon!.code}: {brl(discount)} de desconto</p>}
             {deposit > 0 && (
               <p className="mt-2 rounded-xl px-3 py-2 text-sm font-medium" style={{ background: `${theme.primary}26` }}>
-                Para garantir o horário: sinal de {brl(deposit)} no Pix{deposit < service.price_cents ? ` e ${brl(service.price_cents - deposit)} no dia` : ""}.
+                Para garantir o horário: sinal de {brl(deposit)} no Pix{deposit < price ? ` e ${brl(price - deposit)} no dia` : ""}.
               </p>
             )}
           </div>
@@ -189,6 +208,16 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
               <input type="checkbox" checked={form.consent} onChange={(e) => setForm({ ...form, consent: e.target.checked })} className="mt-0.5" style={{ accentColor: theme.primary }} />
               Quero receber lembretes e avisos de horários livres de {b.name}.
             </label>
+            {service.price_cents > 0 && (couponOpen ? (
+              <div>
+                <div className="flex gap-2">
+                  <input value={couponInput} onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponMsg(null); setCoupon(null); }} placeholder="Código do cupom" aria-label="Código do cupom"
+                    className="min-w-0 flex-1 rounded-2xl border px-4 py-3 uppercase outline-none" style={{ background: soft, borderColor: `${theme.text}33`, color: theme.text }} />
+                  <button type="button" onClick={() => applyCoupon()} className="shrink-0 rounded-2xl px-4 text-sm font-semibold" style={{ border: `1px solid ${theme.primary}`, color: theme.text }}>Aplicar</button>
+                </div>
+                {couponMsg && <p className="mt-1 text-sm text-red-500">{couponMsg}</p>}
+              </div>
+            ) : <button type="button" onClick={() => setCouponOpen(true)} className="text-sm underline opacity-75">Tenho um cupom de desconto</button>)}
             {error && <p role="alert" className="rounded-xl bg-red-500/15 p-3 text-sm">{error}</p>}
             <button disabled={busy} className="w-full rounded-2xl py-4 text-base font-bold transition active:scale-[.99] disabled:opacity-60" style={primaryBtn}>
               {busy ? "Agendando…" : deposit > 0 ? "Reservar e pagar o sinal" : "Confirmar agendamento"}

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { getContext } from "@/lib/business";
 import { lapsedCustomers, type CampaignCustomer } from "@/lib/campaign";
 import { CampaignView } from "./view";
+import type { Coupon } from "./coupons";
 
 export const metadata: Metadata = { title: "Campanhas" };
 
@@ -25,5 +26,15 @@ export default async function CampanhasPage({ searchParams }: { searchParams: Pr
     if (rows.length < 1000) break;
   }
   const lapsed = lapsedCustomers(all, days);
-  return <CampaignView businessId={business.id} businessName={business.name} bookingUrl={bookingUrl} days={days} options={OPTIONS} list={lapsed} />;
+
+  // Cupons (a tabela pode não existir antes do SQL de cupons)
+  const [{ data: cps, error: cpErr }, { data: used }] = await Promise.all([
+    supabase.from("coupons").select("id, code, kind, value, expires_on, max_uses, once_per_customer, active").eq("business_id", business.id).order("created_at", { ascending: false }),
+    supabase.from("appointments").select("coupon_id").eq("business_id", business.id).not("coupon_id", "is", null).neq("status", "cancelled").limit(5000),
+  ]);
+  const uses = new Map<string, number>();
+  for (const u of (used ?? []) as { coupon_id: string }[]) uses.set(u.coupon_id, (uses.get(u.coupon_id) ?? 0) + 1);
+  const coupons = ((cps ?? []) as Omit<Coupon, "uses">[]).map((k) => ({ ...k, uses: uses.get(k.id) ?? 0 }));
+
+  return <CampaignView businessId={business.id} businessName={business.name} bookingUrl={bookingUrl} days={days} options={OPTIONS} list={lapsed} coupons={coupons} couponsReady={!cpErr} />;
 }

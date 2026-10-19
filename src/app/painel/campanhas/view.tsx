@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { brl, formatDate, waLink } from "@/lib/format";
 import { DEFAULT_CAMPAIGN_MESSAGE, fillMessage, type Lapsed } from "@/lib/campaign";
 import { HelpTip } from "@/components/help-tip";
+import { Coupons, couponLabel, type Coupon } from "./coupons";
 
 // Mensagem e "já enviei" ficam no aparelho do dono: é só um lembrete de quem já foi chamado
 const read = <T,>(key: string, fallback: T): T => { try { return JSON.parse(localStorage.getItem(key) ?? "null") ?? fallback; } catch { return fallback; } };
 const write = (key: string, v: unknown) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch {} };
 
-export function CampaignView({ businessId, businessName, bookingUrl, days, options, list }: {
-  businessId: string; businessName: string; bookingUrl: string; days: number; options: number[]; list: Lapsed[];
+export function CampaignView({ businessId, businessName, bookingUrl, days, options, list, coupons, couponsReady }: {
+  businessId: string; businessName: string; bookingUrl: string; days: number; options: number[]; list: Lapsed[]; coupons: Coupon[]; couponsReady: boolean;
 }) {
   const msgKey = `somarcar:campanha-msg:${businessId}`;
   const sentKey = `somarcar:campanha-enviados:${businessId}`;
@@ -28,6 +29,13 @@ export function CampaignView({ businessId, businessName, bookingUrl, days, optio
   }, [list, showAll, sent]);
   const pending = shown.filter((c) => !sent[c.id]).length;
   const potential = shown.reduce((s, c) => s + Math.round(c.spentCents / c.visits), 0);
+
+  function couponToMessage(k: Coupon) {
+    const text = `Oi, {nome}! Sentimos sua falta aqui no {negocio}. Para você voltar, preparamos ${couponLabel(k)} com o cupom ${k.code}. É só marcar por este link que ele já vem aplicado: ${bookingUrl}?cupom=${k.code}`;
+    setMessage(text);
+    write(msgKey, text);
+    document.getElementById("msg")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   function markSent(id: string) {
     const next = { ...sent, [id]: new Date().toISOString() };
@@ -49,10 +57,12 @@ export function CampaignView({ businessId, businessName, bookingUrl, days, optio
         ))}
       </div>
 
+      <Coupons list={coupons} ready={couponsReady} bookingUrl={bookingUrl} onUse={couponToMessage} />
+
       <section className="card space-y-2">
         <label htmlFor="msg" className="label">Mensagem</label>
         <textarea id="msg" rows={3} value={message} onChange={(e) => { setMessage(e.target.value); write(msgKey, e.target.value); }} className="field" />
-        <p className="text-xs text-muted">Use {"{nome}"} para o primeiro nome do cliente, {"{negocio}"} para o nome do seu negócio e {"{link}"} para o link de agendamento. Dica: ofereça um mimo, como &quot;10% de desconto até sexta&quot;.
+        <p className="text-xs text-muted">Use {"{nome}"} para o primeiro nome do cliente, {"{negocio}"} para o nome do seu negócio e {"{link}"} para o link de agendamento. Dica: crie um cupom acima e toque em &quot;Usar na campanha&quot; para a mensagem já levar o desconto.
           {message !== DEFAULT_CAMPAIGN_MESSAGE && <> <button type="button" className="underline" onClick={() => { setMessage(DEFAULT_CAMPAIGN_MESSAGE); write(msgKey, DEFAULT_CAMPAIGN_MESSAGE); }}>Voltar à mensagem padrão</button></>}
         </p>
       </section>
