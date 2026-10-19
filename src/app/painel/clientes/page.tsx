@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
-import { getContext } from "@/lib/business";
+import { canManage, getContext } from "@/lib/business";
 import { brl, formatDate, waLink } from "@/lib/format";
 import { HelpTip } from "@/components/help-tip";
 import { loyaltyCard, packageUsable, type CustomerPackage } from "@/lib/loyalty";
 import { redeemLoyalty, sellPackage } from "./actions";
+import { MergeForm } from "./merge-form";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -20,7 +21,7 @@ async function saveNotes(form: FormData) {
 }
 
 export default async function ClientesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { supabase, business } = await getContext();
+  const { supabase, business, role } = await getContext();
   const { q } = await searchParams;
   let query = supabase.from("customers").select("id, name, phone, email, notes, created_at, appointments(starts_at, status, price_cents, service:services(name))").eq("business_id", business.id).order("created_at", { ascending: false }).limit(200);
   if (q) {
@@ -121,6 +122,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
                 <textarea id={`n-${c.id}`} name="notes" rows={2} defaultValue={c.notes ?? ""} className="field" placeholder="Ex.: prefere máquina 2 nas laterais" />
                 <button className="btn btn-ghost px-3 py-2 text-xs">Salvar</button>
               </form>
+              {canManage(role) && <MergeForm keep={{ id: c.id, name: c.name }} others={rows.filter((o) => o.id !== c.id).map((o) => ({ id: o.id, name: o.name, phone: o.phone, visits: o.visits }))} />}
             </div>
           </details>
         ))}
