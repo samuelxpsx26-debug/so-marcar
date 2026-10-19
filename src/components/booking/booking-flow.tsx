@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { forgetCustomer, loadCustomer, saveCustomer } from "@/lib/remembered-customer";
 import { createClient } from "@/lib/supabase/client";
 import { notify } from "@/lib/notify-client";
 import { brl, formatDate, formatTime, normalizePhone, waLink } from "@/lib/format";
@@ -18,12 +19,17 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [proId, setProId] = useState<string | null>(null);
   const [slot, setSlot] = useState<Slot | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", consent: true });
+  // O formulário só aparece depois de escolher o horário, então ler o aparelho aqui não afeta a hidratação
+  const [form, setForm] = useState(() => {
+    const c = typeof window === "undefined" ? null : loadCustomer();
+    return { name: c?.name ?? "", phone: c?.phone ?? "", email: c?.email ?? "", consent: true };
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Booked | null>(null);
   const [waitDay, setWaitDay] = useState<string | null>(null);
   const idem = useMemo(() => crypto.randomUUID(), []);
+  const [remembered, setRemembered] = useState(() => form.phone !== "");
 
   const service = b.services.find((s) => s.id === serviceId);
   const pros = b.professionals.filter((p) => !serviceId || p.service_ids.length === 0 || p.service_ids.includes(serviceId));
@@ -56,6 +62,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
       if (error.code === "23P01") { setSlot(null); setStep("time"); }
       return;
     }
+    saveCustomer(form);
     const booked = data as Booked;
     setResult(booked);
     // Com sinal, a confirmação por e-mail só sai depois que o dono confirmar o Pix
@@ -169,6 +176,12 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
             )}
           </div>
           <form onSubmit={confirm} className="space-y-3">
+            {remembered && (
+              <p className="text-sm opacity-75">
+                Seus dados da última vez já estão preenchidos.{" "}
+                <button type="button" className="underline" onClick={() => { forgetCustomer(); setRemembered(false); setForm({ ...form, name: "", phone: "", email: "" }); }}>Não é você?</button>
+              </p>
+            )}
             <Input label="Seu nome" value={form.name} onChange={(v) => setForm({ ...form, name: v })} autoComplete="name" theme={theme} />
             <Input label="WhatsApp" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} inputMode="tel" autoComplete="tel" placeholder="(11) 99999-9999" theme={theme} />
             <Input label="E-mail (para receber o lembrete)" value={form.email} onChange={(v) => setForm({ ...form, email: v })} type="email" autoComplete="email" theme={theme} optional />

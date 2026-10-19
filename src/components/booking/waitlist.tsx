@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { loadCustomer, saveCustomer } from "@/lib/remembered-customer";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate, normalizePhone } from "@/lib/format";
 import { Input } from "./input";
@@ -9,7 +10,10 @@ const PERIODS = [["qualquer", "Qualquer horário"], ["manha", "Manhã"], ["tarde
 
 /** Lista de espera de um dia lotado: o cliente deixa nome e WhatsApp e o dono chama quando abrir vaga */
 export function Waitlist({ b, theme, service, professionalId, day }: { b: PublicBusiness; theme: ResolvedTheme; service: PublicService; professionalId: string | null; day: string }) {
-  const [form, setForm] = useState({ name: "", phone: "", consent: true });
+  const [form, setForm] = useState(() => {
+    const c = typeof window === "undefined" ? null : loadCustomer();
+    return { name: c?.name ?? "", phone: c?.phone ?? "", consent: true };
+  });
   const [period, setPeriod] = useState<(typeof PERIODS)[number][0]>("qualquer");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +34,7 @@ export function Waitlist({ b, theme, service, professionalId, day }: { b: Public
     setBusy(false);
     // Mensagens do banco (22023, P0002, 54000) já vêm em português; o resto vira uma mensagem amigável
     if (error) return setError(["22023", "P0002", "54000"].includes(error.code) ? error.message : "Não foi possível entrar na lista agora. Tente de novo ou fale com o estabelecimento.");
+    saveCustomer(form);
     setPosition((data as { position: number }).position);
   }
 
