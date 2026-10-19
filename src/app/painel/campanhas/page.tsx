@@ -7,7 +7,7 @@ import type { Coupon } from "./coupons";
 
 export const metadata: Metadata = { title: "Campanhas" };
 
-const OPTIONS = [30, 45, 60, 90];
+const OPTIONS = [7, 15, 30, 45, 60, 90];
 
 export default async function CampanhasPage({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
   const { supabase, business } = await getContext();
