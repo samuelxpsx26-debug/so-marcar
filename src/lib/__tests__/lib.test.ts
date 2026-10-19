@@ -9,6 +9,7 @@ import { BACKDROPS, backgroundCatalog } from "../backgrounds";
 import { PATTERNS } from "../patterns";
 import { inPeriod, openTimes, waitlistOpenings } from "../waitlist";
 import { crc16, depositCents, normalizePixKey, pixPayload } from "../pix";
+import { computeReport, monthlyRevenue, rangeFor, type ReportAppt } from "../reports";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -258,5 +259,42 @@ describe("pix", () => {
     expect(depositCents("fixed", 2000, 5000)).toBe(2000);
     expect(depositCents("fixed", 9000, 5000)).toBe(5000);
     expect(depositCents("off", 30, 5000)).toBe(0);
+  });
+});
+
+describe("relatórios", () => {
+  const tz = "America/Sao_Paulo";
+  const ap = (startsAt: string, status: string, priceCents: number, customerId: string, extra: Partial<ReportAppt> = {}): ReportAppt => ({
+    startsAt, status, source: "public", priceCents, customerId, customerName: `C${customerId}`, customerPhone: "55119", customerCreatedAt: "", serviceName: "Corte", professionalName: "Zé", ...extra,
+  });
+  const list = [
+    ap("2026-09-10T15:00:00Z", "completed", 4000, "1"),
+    ap("2026-10-02T15:00:00Z", "completed", 4000, "1"),
+    ap("2026-10-03T15:00:00Z", "completed", 6000, "2", { serviceName: "Barba", source: "admin" }),
+    ap("2026-10-05T15:00:00Z", "no_show", 4000, "3"),
+    ap("2026-10-06T15:00:00Z", "cancelled", 4000, "3"),
+    ap("2026-10-19T15:00:00Z", "confirmed", 4000, "4"),
+    ap("2026-10-25T15:00:00Z", "confirmed", 5000, "5"),
+  ];
+
+  it("resume o mês", () => {
+    const r = computeReport(list, rangeFor("mes", "2026-10-20"), tz, new Date("2026-10-20T12:00:00Z"));
+    expect(r.revenue).toBe(10000);
+    expect(r.completed).toBe(2);
+    expect(r.avgTicket).toBe(5000);
+    expect(r.noShowRate).toBeCloseTo(1 / 3);
+    expect(r.newCustomers).toBe(1);
+    expect(r.returningCustomers).toBe(1);
+    expect(r.unmarked).toBe(1);
+    expect(r.upcomingCents).toBe(5000);
+    expect(r.services[0]).toMatchObject({ name: "Barba", cents: 6000 });
+    expect(r.online).toBe(4);
+  });
+
+  it("monta os períodos e o faturamento por mês", () => {
+    expect(rangeFor("mes-passado", "2026-01-15")).toMatchObject({ from: "2025-12-01", to: "2026-01-01" });
+    expect(rangeFor("90d", "2026-10-20")).toMatchObject({ from: "2026-07-23", to: "2026-10-21" });
+    const m = monthlyRevenue(list, tz, new Date("2026-10-20T12:00:00Z"), 3);
+    expect(m.map((x) => [x.key, x.cents])).toEqual([["2026-08", 0], ["2026-09", 4000], ["2026-10", 10000]]);
   });
 });
