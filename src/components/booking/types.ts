@@ -7,6 +7,8 @@ export type PublicBusiness = {
   theme: { primary?: string; background?: string; image?: string | null; logo?: string | null; style?: ThemeStyle; bg?: string | null };
   cancellation_policy: string | null; max_days_ahead: number; cancel_notice_minutes: number; active: boolean;
   deposit?: { mode: "off" | "percent" | "fixed"; value: number; hold_minutes: number };
+  loyalty?: { visits: number; reward: string } | null;
+  packages?: { id: string; name: string; service_id: string; sessions: number; price_cents: number; valid_days: number | null }[];
   services: PublicService[]; professionals: PublicPro[];
 };
 export type Slot = { professional_id: string; professional_name: string; starts_at: string };

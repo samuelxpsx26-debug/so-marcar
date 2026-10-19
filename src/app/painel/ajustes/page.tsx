@@ -7,6 +7,7 @@ import { reconcileBusinessSubscription } from "@/lib/billing/sync";
 import { createServiceClient } from "@/lib/supabase/server";
 import { SettingsForm, CancelButton } from "./settings-client";
 import { DepositForm } from "./deposit-form";
+import { LoyaltyForm } from "./loyalty-form";
 import { openBillingPortal, startCheckout } from "./billing-actions";
 import { HelpTip } from "@/components/help-tip";
 
@@ -54,6 +55,7 @@ export default async function AjustesPage({ searchParams }: { searchParams: Prom
       </div>
       <SettingsForm business={business} />
       {role !== "professional" && <DepositForm business={business} examplePriceCents={sample?.price_cents ?? 5000} />}
+      {role !== "professional" && <LoyaltyForm business={business} />}
 
       <section id="assinatura" className="card space-y-3">
         <h2 className="text-lg font-bold">Assinatura<HelpTip>O seu plano do Só Marcar: {brl(price)} por mês, sem comissão. O primeiro mês é grátis e você recebe um aviso antes da primeira cobrança. &quot;Cartão e faturas&quot; abre a área segura da Stripe para trocar o cartão e ver recibos.</HelpTip></h2>

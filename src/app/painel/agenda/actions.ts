@@ -79,3 +79,12 @@ export async function confirmDeposit(id: string, waive = false): Promise<ActionR
   revalidatePath("/painel", "layout");
   return { ok: true };
 }
+
+/** Atendimento pago com uma sessão do pacote do cliente */
+export async function spendPackageSession(appointmentId: string, packageId: string): Promise<ActionResult> {
+  const { supabase } = await getContext();
+  const { error } = await supabase.rpc("use_package_session", { p_appointment: appointmentId, p_package: packageId });
+  if (error) return { error: ["22023", "P0002"].includes(error.code) ? error.message : "Não foi possível usar o pacote." };
+  revalidatePath("/painel", "layout");
+  return { ok: true };
+}

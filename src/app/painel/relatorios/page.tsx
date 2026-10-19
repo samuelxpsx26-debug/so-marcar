@@ -19,7 +19,9 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   // Um ano antes do período para saber quem é cliente novo e quem voltou
   const since = addDays(range.from < sixMonths ? range.from : sixMonths, -365);
   const appts = await loadReportAppts(supabase, business.id, zonedToUtc(since, "00:00", tz).toISOString());
-  const r = computeReport(appts, range, tz, now);
+  // Vendas de pacotes (a tabela pode não existir antes do SQL de pacotes)
+  const { data: sales } = await supabase.from("customer_packages").select("price_cents, created_at").eq("business_id", business.id).gte("created_at", zonedToUtc(range.from, "00:00", tz).toISOString());
+  const r = computeReport(appts, range, tz, now, ((sales ?? []) as { price_cents: number; created_at: string }[]).map((k) => ({ priceCents: k.price_cents, createdAt: k.created_at })));
   const months = monthlyRevenue(appts, tz, now, 6);
   return <ReportView business={business} p={p} today={today} range={range} r={r} months={months} />;
 }

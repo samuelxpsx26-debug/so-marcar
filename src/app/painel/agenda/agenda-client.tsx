@@ -3,8 +3,9 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { addDays, brl, formatTime, localDate, waLink } from "@/lib/format";
 import { SubmitButton } from "@/components/submit-button";
-import { confirmDeposit, createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
+import { confirmDeposit, spendPackageSession, createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
 import { notify } from "@/lib/notify-client";
+import { packageUsable, type CustomerPackage } from "@/lib/loyalty";
 
 export type AgendaAppt = {
   id: string; starts_at: string; ends_at: string; status: string; source: string; price_cents: number; notes: string | null;
@@ -19,7 +20,7 @@ type Hour = { professional_id: string; weekday: number; start_time: string; end_
 
 type Props = {
   view: "dia" | "semana" | "mes"; date: string; start: string; end: string; today: string; timezone: string;
-  professionals: Pro[]; services: Service[]; hours: Hour[]; appointments: AgendaAppt[];
+  professionals: Pro[]; services: Service[]; hours: Hour[]; appointments: AgendaAppt[]; packages?: CustomerPackage[];
 };
 
 const PX_PER_MIN = 1.4;
@@ -224,6 +225,9 @@ function ApptSheet({ a, p, onClose }: { a: AgendaAppt; p: Props; onClose: () => 
     return () => { cancel = true; };
   }, [moving, moveDate, a.service_id]);
 
+  const pkg = a.status !== "completed" && a.status !== "no_show" && !awaitingDeposit(a)
+    ? (p.packages ?? []).find((k) => k.customer_id === a.customer?.id && k.service_id === a.service_id && packageUsable(k, new Date(a.starts_at)))
+    : undefined;
   const earlierToday = slots?.filter((s) => new Date(s.starts_at) < new Date(a.starts_at)) ?? [];
   const first = a.customer?.name.split(" ")[0] ?? "";
 
@@ -252,6 +256,11 @@ function ApptSheet({ a, p, onClose }: { a: AgendaAppt; p: Props; onClose: () => 
 
       {!moving ? (
         <div className="mt-5 grid grid-cols-2 gap-2">
+          {pkg && (
+            <button disabled={pending} onClick={() => run(() => spendPackageSession(a.id, pkg.id))} className="btn col-span-2 bg-violet-600 text-white">
+              ✓ Atendido usando o pacote ({pkg.sessions_total - pkg.sessions_used} de {pkg.sessions_total} restantes)
+            </button>
+          )}
           <button disabled={pending} onClick={() => run(() => setStatus(a.id, "completed"))} className="btn bg-emerald-600 text-white">✓ Atendido</button>
           <button disabled={pending} onClick={() => run(() => setStatus(a.id, "no_show"))} className="btn btn-ghost text-bad">Faltou</button>
           <button disabled={pending} onClick={() => setMoving(true)} className="btn btn-ghost">Remarcar / adiantar</button>

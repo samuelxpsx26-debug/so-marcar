@@ -16,6 +16,8 @@ export type Business = {
   // Sinal por Pix (ausentes enquanto o SQL do sinal não roda no banco)
   deposit_mode?: "off" | "percent" | "fixed"; deposit_value?: number; deposit_hold_minutes?: number;
   pix_key_type?: PixKeyType | null; pix_key?: string | null; pix_holder?: string | null; pix_city?: string | null;
+  // Cartão fidelidade (null = desligado)
+  loyalty_visits?: number | null; loyalty_reward?: string | null;
 };
 export type Role = "owner" | "admin" | "professional";
 

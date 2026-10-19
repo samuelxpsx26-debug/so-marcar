@@ -4,6 +4,7 @@ import { getContext } from "@/lib/business";
 import { addDays, formatDate, localDate, zonedToUtc } from "@/lib/format";
 import { AgendaClient, type AgendaAppt } from "./agenda-client";
 import { HelpTip } from "@/components/help-tip";
+import type { CustomerPackage } from "@/lib/loyalty";
 
 export const metadata: Metadata = { title: "Agenda" };
 
@@ -46,6 +47,12 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     supabase.from("working_hours").select("professional_id, weekday, start_time, end_time").eq("business_id", business.id),
   ]);
 
+  // Pacotes dos clientes que aparecem na agenda (tabela pode não existir antes do SQL de pacotes)
+  const ids = Array.from(new Set(((appts ?? []) as unknown as { customer: { id: string } | null }[]).map((a) => a.customer?.id).filter(Boolean))) as string[];
+  const { data: pkgs } = ids.length
+    ? await supabase.from("customer_packages").select("id, customer_id, service_id, name, sessions_total, sessions_used, price_cents, expires_at, created_at").eq("business_id", business.id).in("customer_id", ids.slice(0, 300))
+    : { data: [] };
+
   const step = view === "dia" ? 1 : view === "semana" ? 7 : 30;
   const prev = view === "mes" ? addDays(start, -1) : addDays(date, -step);
   const next = view === "mes" ? end : addDays(date, step);
@@ -87,6 +94,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         services={services ?? []}
         hours={hours ?? []}
         appointments={(appts ?? []) as unknown as AgendaAppt[]}
+        packages={(pkgs ?? []) as CustomerPackage[]}
       />
     </div>
   );

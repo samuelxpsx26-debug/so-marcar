@@ -10,6 +10,7 @@ import { PATTERNS } from "../patterns";
 import { inPeriod, openTimes, waitlistOpenings } from "../waitlist";
 import { crc16, depositCents, normalizePixKey, pixPayload } from "../pix";
 import { computeReport, monthlyRevenue, rangeFor, type ReportAppt } from "../reports";
+import { loyaltyCard, packageUsable } from "../loyalty";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -296,5 +297,29 @@ describe("relatórios", () => {
     expect(rangeFor("90d", "2026-10-20")).toMatchObject({ from: "2026-07-23", to: "2026-10-21" });
     const m = monthlyRevenue(list, tz, new Date("2026-10-20T12:00:00Z"), 3);
     expect(m.map((x) => [x.key, x.cents])).toEqual([["2026-08", 0], ["2026-09", 4000], ["2026-10", 10000]]);
+  });
+});
+
+describe("fidelidade e pacotes", () => {
+  it("conta selos e prêmios", () => {
+    expect(loyaltyCard(3, 10)).toEqual({ rewards: 0, filled: 3, missing: 7 });
+    expect(loyaltyCard(10, 10)).toEqual({ rewards: 1, filled: 10, missing: 0 });
+    expect(loyaltyCard(21, 10).rewards).toBe(2);
+  });
+  it("sabe quando o pacote ainda vale", () => {
+    const p = { id: "1", customer_id: "c", service_id: "s", name: "4 cortes", sessions_total: 4, sessions_used: 3, price_cents: 16000, expires_at: "2026-11-01T00:00:00Z", created_at: "" };
+    expect(packageUsable(p, new Date("2026-10-20T12:00:00Z"))).toBe(true);
+    expect(packageUsable({ ...p, sessions_used: 4 }, new Date("2026-10-20T12:00:00Z"))).toBe(false);
+    expect(packageUsable(p, new Date("2026-11-02T12:00:00Z"))).toBe(false);
+  });
+});
+
+describe("relatório com pacotes", () => {
+  it("soma pacotes vendidos no período ao faturamento", () => {
+    const r = computeReport([], rangeFor("mes", "2026-10-20"), "America/Sao_Paulo", new Date("2026-10-20T12:00:00Z"),
+      [{ priceCents: 16000, createdAt: "2026-10-05T15:00:00Z" }, { priceCents: 9000, createdAt: "2026-09-05T15:00:00Z" }]);
+    expect(r.revenue).toBe(16000);
+    expect(r.packagesSold).toBe(1);
+    expect(r.avgTicket).toBe(0);
   });
 });

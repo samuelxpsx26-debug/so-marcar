@@ -11,14 +11,18 @@ export type Range = { from: string; to: string }; // datas locais YYYY-MM-DD, "t
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export function computeReport(all: ReportAppt[], range: Range, timeZone: string, now = new Date()) {
+export function computeReport(all: ReportAppt[], range: Range, timeZone: string, now = new Date(), packageSales: { priceCents: number; createdAt: string }[] = []) {
   const day = (a: ReportAppt) => localDate(new Date(a.startsAt), timeZone);
   const inRange = all.filter((a) => day(a) >= range.from && day(a) < range.to && a.status !== "cancelled");
   const done = inRange.filter((a) => a.status === "completed");
   const noShows = inRange.filter((a) => a.status === "no_show");
   const unmarked = inRange.filter((a) => (a.status === "confirmed" || a.status === "pending") && new Date(a.startsAt) < now);
   const upcoming = inRange.filter((a) => (a.status === "confirmed" || a.status === "pending") && new Date(a.startsAt) >= now);
-  const revenue = done.reduce((s, a) => s + a.priceCents, 0);
+  const serviceRevenue = done.reduce((s, a) => s + a.priceCents, 0);
+  // Pacotes entram no faturamento no dia da venda (as sessões usadas depois saem com valor zero)
+  const sold = packageSales.filter((k) => { const d = localDate(new Date(k.createdAt), timeZone); return d >= range.from && d < range.to; });
+  const packagesCents = sold.reduce((s, k) => s + k.priceCents, 0);
+  const revenue = serviceRevenue + packagesCents;
   const finished = done.length + noShows.length;
 
   // Clientes: novos (primeira visita no período) x que voltaram (já tinham vindo antes)
@@ -55,7 +59,10 @@ export function computeReport(all: ReportAppt[], range: Range, timeZone: string,
   return {
     revenue,
     completed: done.length,
-    avgTicket: done.length ? Math.round(revenue / done.length) : 0,
+    serviceRevenue,
+    packagesSold: sold.length,
+    packagesCents,
+    avgTicket: done.length ? Math.round(serviceRevenue / done.length) : 0,
     noShows: noShows.length,
     noShowRate: finished ? noShows.length / finished : 0,
     lostToNoShows: noShows.reduce((s, a) => s + a.priceCents, 0),

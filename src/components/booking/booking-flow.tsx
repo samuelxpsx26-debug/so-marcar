@@ -74,6 +74,11 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
     <div>
       {step === "service" && (
         <section>
+          {b.loyalty && (
+            <p className="mb-4 rounded-2xl px-4 py-3 text-sm" style={{ background: `${theme.primary}26` }}>
+              🎁 <strong>Cartão fidelidade:</strong> a cada {b.loyalty.visits} atendimentos, você ganha {b.loyalty.reward}.
+            </p>
+          )}
           <h2 className="mb-3 text-lg font-semibold">Escolha o serviço</h2>
           <div className="space-y-2">
             {b.services.length === 0 && <p className="opacity-75">Nenhum serviço disponível ainda.</p>}
@@ -87,6 +92,29 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
               </button>
             ))}
           </div>
+          {!!b.packages?.length && (
+            <div className="mt-6">
+              <h2 className="mb-3 text-lg font-semibold">Pacotes</h2>
+              <div className="space-y-2">
+                {b.packages.map((k) => {
+                  const single = b.services.find((s) => s.id === k.service_id)?.price_cents ?? 0;
+                  const save = single * k.sessions - k.price_cents;
+                  return (
+                    <div key={k.id} className="flex items-center justify-between gap-3 rounded-2xl p-4" style={{ background: soft }}>
+                      <span className="min-w-0">
+                        <span className="block font-semibold">{k.name}</span>
+                        <span className="block text-sm opacity-70">{k.sessions} sessões{save > 0 ? ` · economize ${brl(save)}` : ""}{k.valid_days ? ` · use em ${k.valid_days} dias` : ""}</span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span className="block font-bold">{brl(k.price_cents)}</span>
+                        {b.whatsapp && <a href={waLink(b.whatsapp, `Oi! Tenho interesse no pacote "${k.name}" (${brl(k.price_cents)}).`)} target="_blank" className="text-xs underline opacity-80">Quero este</a>}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
       )}
 

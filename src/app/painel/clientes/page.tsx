@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { getContext } from "@/lib/business";
 import { brl, formatDate, waLink } from "@/lib/format";
 import { HelpTip } from "@/components/help-tip";
+import { loyaltyCard, packageUsable, type CustomerPackage } from "@/lib/loyalty";
+import { redeemLoyalty, sellPackage } from "./actions";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -25,11 +27,24 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
     const term = q.replace(/[%_,()]/g, "").slice(0, 60);
     query = query.or(`name.ilike.%${term}%,phone.ilike.%${term.replace(/\D/g, "") || term}%`);
   }
-  const { data } = await query;
+  const [{ data }, redemptions, owned, catalog] = await Promise.all([
+    query,
+    // Tabelas de fidelidade e pacotes podem não existir ainda (SQL não rodado): tratamos como vazias
+    supabase.from("loyalty_redemptions").select("customer_id, visits_used").eq("business_id", business.id),
+    supabase.from("customer_packages").select("id, customer_id, service_id, name, sessions_total, sessions_used, price_cents, expires_at, created_at").eq("business_id", business.id).order("created_at", { ascending: false }),
+    supabase.from("packages").select("id, name, price_cents, sessions").eq("business_id", business.id).eq("active", true).order("price_cents"),
+  ]);
+  const used = new Map<string, number>();
+  for (const r of (redemptions.data ?? []) as { customer_id: string; visits_used: number }[]) used.set(r.customer_id, (used.get(r.customer_id) ?? 0) + r.visits_used);
+  const packagesOf = new Map<string, CustomerPackage[]>();
+  for (const k of (owned.data ?? []) as CustomerPackage[]) packagesOf.set(k.customer_id, [...(packagesOf.get(k.customer_id) ?? []), k]);
+  const loyaltyOn = !!business.loyalty_visits && !redemptions.error;
+  const offers = (catalog.data ?? []) as { id: string; name: string; price_cents: number; sessions: number }[];
   const rows = ((data ?? []) as unknown as Row[]).map((c) => {
     const done = c.appointments.filter((a) => a.status === "completed").sort((a, b) => b.starts_at.localeCompare(a.starts_at));
     const next = c.appointments.filter((a) => (a.status === "confirmed" || a.status === "pending") && new Date(a.starts_at) > new Date()).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
-    return { ...c, visits: done.length, spent: done.reduce((s, a) => s + a.price_cents, 0), last: done[0]?.starts_at, next: next?.starts_at, noShows: c.appointments.filter((a) => a.status === "no_show").length, history: done.slice(0, 5) };
+    const card = loyaltyOn ? loyaltyCard(Math.max(0, done.length - (used.get(c.id) ?? 0)), business.loyalty_visits!) : null;
+    return { ...c, card, packages: packagesOf.get(c.id) ?? [], visits: done.length, spent: done.reduce((s, a) => s + a.price_cents, 0), last: done[0]?.starts_at, next: next?.starts_at, noShows: c.appointments.filter((a) => a.status === "no_show").length, history: done.slice(0, 5) };
   });
 
   return (
@@ -53,6 +68,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
                   {c.visits} {c.visits === 1 ? "visita" : "visitas"} · {brl(c.spent)}{c.last ? ` · última ${formatDate(c.last, business.timezone, { day: "numeric", month: "short" })}` : ""}
                 </span>
               </span>
+              {c.card && c.card.rewards > 0 && <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-xs font-medium text-fuchsia-700">🎁 prêmio</span>}
               {c.next ? <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-good">agendado</span> : c.noShows > 0 ? <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-bad">{c.noShows} falta{c.noShows > 1 ? "s" : ""}</span> : null}
             </summary>
             <div className="space-y-4 border-t border-line p-4 text-sm">
@@ -60,6 +76,40 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
                 <a target="_blank" href={waLink(c.phone, `Oi, ${c.name.split(" ")[0]}! Tudo bem?`)} className="btn bg-[#25D366] px-3 py-2 text-xs text-white">WhatsApp</a>
                 <span className="self-center text-muted">+{c.phone}{c.email ? ` · ${c.email}` : ""}</span>
               </div>
+              {c.card && (
+                <div className="rounded-xl bg-zinc-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">Cartão fidelidade</p>
+                  <div className="mt-2 flex flex-wrap gap-1">{Array.from({ length: business.loyalty_visits! }).map((_, i) => <span key={i} className={`h-5 w-5 rounded-full ${i < c.card!.filled ? "bg-brand" : "border-2 border-dashed border-zinc-300"}`} />)}</div>
+                  {c.card.rewards > 0 ? (
+                    <form action={redeemLoyalty} className="mt-2 flex flex-wrap items-center gap-2">
+                      <input type="hidden" name="customer_id" value={c.id} />
+                      <span className="font-semibold text-fuchsia-700">🎁 Prêmio liberado: {business.loyalty_reward}{c.card.rewards > 1 ? ` (${c.card.rewards}×)` : ""}</span>
+                      <button className="btn btn-primary px-3 py-1.5 text-xs">Entregar prêmio</button>
+                    </form>
+                  ) : <p className="mt-2 text-muted">Faltam {c.card.missing} {c.card.missing === 1 ? "atendimento" : "atendimentos"} para {business.loyalty_reward}.</p>}
+                </div>
+              )}
+              {(c.packages.length > 0 || offers.length > 0) && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">Pacotes</p>
+                  {c.packages.map((k) => {
+                    const ok = packageUsable(k);
+                    return (
+                      <p key={k.id} className={`flex justify-between gap-2 ${ok ? "" : "text-muted"}`}>
+                        <span>{k.name}</span>
+                        <span>{k.sessions_total - k.sessions_used} de {k.sessions_total} restantes{k.expires_at ? ` · ${new Date(k.expires_at) < new Date() ? "venceu" : "vence"} ${formatDate(k.expires_at, business.timezone, { day: "numeric", month: "short" })}` : ""}</span>
+                      </p>
+                    );
+                  })}
+                  {offers.length > 0 && (
+                    <form action={sellPackage} className="flex gap-2">
+                      <input type="hidden" name="customer_id" value={c.id} />
+                      <select name="package_id" aria-label="Pacote" className="field py-2 text-sm">{offers.map((o) => <option key={o.id} value={o.id}>{o.name} · {brl(o.price_cents)}</option>)}</select>
+                      <button className="btn btn-ghost shrink-0 px-3 py-2 text-xs">Vender pacote</button>
+                    </form>
+                  )}
+                </div>
+              )}
               {c.history.length > 0 && (
                 <ul className="space-y-1">
                   {c.history.map((h, i) => <li key={i} className="flex justify-between"><span>{formatDate(h.starts_at, business.timezone, { day: "numeric", month: "short", year: "2-digit" })} · {h.service?.name}</span><span className="text-muted">{brl(h.price_cents)}</span></li>)}

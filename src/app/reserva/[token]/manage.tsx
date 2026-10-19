@@ -8,10 +8,12 @@ import { brl, formatDate, formatTime, waLink } from "@/lib/format";
 import { SlotPicker } from "@/components/booking/slot-picker";
 import type { ResolvedTheme } from "@/components/booking/types";
 import { PixPayment, type DepositInfo } from "@/components/booking/pix-payment";
+import { loyaltyCard } from "@/lib/loyalty";
 
 export type BookingInfo = {
   id: string; status: string; starts_at: string; ends_at: string; customer_name: string; can_change: boolean;
   deposit?: DepositInfo;
+  loyalty?: { visits: number; reward: string; stamps: number } | null;
   service: { id: string; name: string; duration_minutes: number; price_cents: number };
   professional: { id: string; name: string };
   business: { name: string; slug: string; timezone: string; theme: { primary?: string; background?: string }; whatsapp: string | null; cancel_notice_minutes: number; cancellation_policy: string | null };
@@ -58,7 +60,7 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
         <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
         <p className="mt-1 text-lg font-semibold">{formatDate(info.starts_at, tz)} às {formatTime(info.starts_at, tz)}</p>
         <p className="opacity-80">{info.service.name} com {info.professional.name} · {brl(info.service.price_cents)}</p>
-        {dep && (dep.status === "paid" || dep.status === "waived") && dep.cents > 0 && (
+        {dep && (info.status === "confirmed" || info.status === "pending") && (dep.status === "paid" || dep.status === "waived") && dep.cents > 0 && (
           <p className="mt-2 text-sm font-medium">{dep.status === "paid" ? `Sinal de ${brl(dep.cents)} pago ✓ · falta ${brl(Math.max(info.service.price_cents - dep.cents, 0))} no dia` : "Sinal dispensado pelo estabelecimento"}</p>
         )}
       </div>
@@ -72,6 +74,22 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
       {expired && (
         <p className="mt-5 rounded-2xl p-4 text-sm" style={{ background: soft }}>O prazo para pagar o sinal acabou e o horário foi liberado. Se você já pagou, {info.business.whatsapp ? <a className="underline" href={waLink(info.business.whatsapp, `Oi! Sou ${info.customer_name} e paguei o sinal de ${brl(dep!.cents)} para ${formatDate(info.starts_at, tz, { day: "numeric", month: "numeric" })} às ${formatTime(info.starts_at, tz)}.`)}>fale com {info.business.name}</a> : `fale com ${info.business.name}`}. Se não, é só marcar de novo.</p>
       )}
+
+      {info.loyalty && mode === "view" && (() => {
+        const card = loyaltyCard(info.loyalty.stamps, info.loyalty.visits);
+        return (
+          <div className="mt-5 rounded-2xl p-5" style={{ background: soft }}>
+            <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Seu cartão fidelidade</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {Array.from({ length: info.loyalty.visits }).map((_, i) => (
+                <span key={i} className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold"
+                  style={i < card.filled ? { background: theme.primary, color: theme.onPrimary } : { border: `2px dashed ${theme.text}55`, opacity: 0.8 }}>{i < card.filled ? "✓" : i + 1}</span>
+              ))}
+            </div>
+            <p className="mt-3 text-sm">{card.rewards > 0 ? <>🎁 Você ganhou <strong>{info.loyalty.reward}</strong>! Avise no seu próximo atendimento.</> : <>Faltam <strong>{card.missing}</strong> {card.missing === 1 ? "atendimento" : "atendimentos"} para ganhar <strong>{info.loyalty.reward}</strong>.</>}</p>
+          </div>
+        );
+      })()}
 
       {info.can_change && mode === "view" && (
         <div className="mt-5 space-y-2">
