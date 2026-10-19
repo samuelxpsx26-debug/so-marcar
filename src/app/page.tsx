@@ -3,7 +3,7 @@ import { BILLING_NOTICE_DAY, brl, pricePerDay, PLAN_PRICE_CENTS, TRIAL_DAYS } fr
 import { getPlan } from "@/lib/billing/plans";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/env";
 import { Landing } from "@/components/landing/landing";
-import { landingFonts } from "@/components/landing/fonts";
+import { brandFonts } from "@/components/brand-fonts";
 import { findNiche } from "@/components/landing/themes";
 
 // ?nicho=barbearia (links de anúncio) já abre no tema do nicho, sem a pergunta
@@ -14,7 +14,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
   const plan = supabaseConfigured ? await getPlan(createAnonClient(SUPABASE_URL, SUPABASE_ANON_KEY)).catch(() => null) : null;
   const price = plan?.price_cents ?? PLAN_PRICE_CENTS;
   return (
-    <div className={landingFonts}>
+    <div className={brandFonts}>
       <Landing
         initialNiche={niche?.id ?? null}
         priceLabel={brl(price)}

@@ -2,7 +2,7 @@
 
 import "./landing.css";
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { NEUTRAL, NICHES, type Niche, type NicheId } from "./themes";
 
 const SIGNUP = "/entrar?modo=cadastro";
@@ -20,6 +20,11 @@ const FEATURES: [string, string][] = [
   ["Quanto o app te deu", "Receita que chegou pelo link e atendimentos salvos por remarcação, em reais."],
   ["Instala no celular", "Funciona como app no seu celular, sem baixar nada na loja."],
 ];
+
+/** Lembra o nicho para já vir marcado no cadastro do negócio (/comecar lê o cookie) */
+function rememberNiche(id: NicheId) {
+  document.cookie = `sm_nicho=${id}; path=/; max-age=2592000; samesite=lax`;
+}
 
 /** Variáveis CSS do tema (usadas pelo landing.css) */
 function vars(n: Niche): CSSProperties {
@@ -59,6 +64,7 @@ type Props = {
 export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noticeDay, year }: Props) {
   const [chosen, setChosen] = useState<NicheId | null>(initialNiche);
   const t = NICHES.find((n) => n.id === chosen) ?? NEUTRAL;
+  useEffect(() => { if (chosen) rememberNiche(chosen); }, [chosen]);
   const cap = t.clientPlural.charAt(0).toUpperCase() + t.clientPlural.slice(1);
 
   function pick(id: NicheId) {

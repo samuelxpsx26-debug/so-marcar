@@ -8,6 +8,7 @@ import type { Segment } from "@/lib/segments";
 import { RESERVED_SLUGS } from "@/lib/slug";
 import { waLink } from "@/lib/format";
 import { BookingFlow } from "@/components/booking/booking-flow";
+import { brandFonts } from "@/components/brand-fonts";
 import type { PublicBusiness } from "@/components/booking/types";
 
 const load = cache(async (slug: string) => {
@@ -29,16 +30,25 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
   const theme = resolveTheme(b.theme, b.segment as Segment);
 
   return (
-    <main className="min-h-dvh" style={{ backgroundColor: theme.background, backgroundImage: theme.backgroundImage, backgroundSize: "cover", color: theme.text }}>
-      <div className="mx-auto max-w-lg px-4 pb-16 pt-8">
+    <main className={`${brandFonts} min-h-dvh`} style={{ backgroundColor: theme.background, backgroundImage: theme.backgroundImage, color: theme.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
+      <div className="mx-auto max-w-lg px-4 pb-16 pt-4">
         <header className="mb-8">
-          <div className="mb-4 grid h-16 w-16 place-items-center rounded-2xl text-2xl font-extrabold" style={{ background: theme.primary, color: theme.onPrimary }}>{b.name.slice(0, 1).toUpperCase()}</div>
-          <h1 className="text-3xl font-extrabold tracking-tight">{b.name}</h1>
-          {b.description && <p className="mt-2 opacity-80">{b.description}</p>}
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm opacity-75">
-            {b.address?.text && <span>📍 {b.address.text}</span>}
-            {b.whatsapp && <a href={waLink(b.whatsapp, "Oi! Tenho uma dúvida.")} target="_blank" className="underline">WhatsApp</a>}
+          <div className="relative flex min-h-48 flex-col justify-end overflow-hidden rounded-3xl p-5 text-white shadow-xl" style={{ backgroundImage: theme.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl text-2xl font-extrabold shadow-lg" style={{ background: theme.primary, color: theme.onPrimary }}>{b.name.slice(0, 1).toUpperCase()}</div>
+            <h1 className="text-4xl leading-none" style={{ fontFamily: theme.display.family, fontWeight: theme.display.weight, fontStyle: theme.display.style, textTransform: theme.display.transform, letterSpacing: theme.display.tracking }}>{b.name}</h1>
           </div>
+          {b.description && <p className="mt-4 opacity-80">{b.description}</p>}
+          {(b.address?.text || b.whatsapp) && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm opacity-80">
+              {b.address?.text && (
+                <span className="inline-flex items-center gap-1.5">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg>
+                  {b.address.text}
+                </span>
+              )}
+              {b.whatsapp && <a href={waLink(b.whatsapp, "Oi! Tenho uma dúvida.")} target="_blank" rel="noopener" className="underline">Falar no WhatsApp</a>}
+            </div>
+          )}
         </header>
         <BookingFlow b={b} theme={theme} />
         <footer className="mt-16 text-center text-xs opacity-50">

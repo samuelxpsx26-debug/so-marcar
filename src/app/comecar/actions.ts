@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isValidSlug, slugify } from "@/lib/slug";
 import { SEGMENTS, type Segment } from "@/lib/segments";
 import { normalizePhone } from "@/lib/format";
+import { styleForSegment, THEME_STYLES } from "@/lib/theme";
 
 export type OnboardState = { error?: string };
 
@@ -31,10 +32,12 @@ export async function createBusiness(_: OnboardState, form: FormData): Promise<O
   const { data: id, error } = await supabase.rpc("create_business", { p_name: d.name, p_slug: slug, p_segment: d.segment, p_timezone: "America/Sao_Paulo" });
   if (error || !id) return { error: error?.message?.includes("endereço") ? "Esse endereço já está em uso, escolha outro." : "Não foi possível criar agora. Tente de novo." };
 
-  const suggestion = SEGMENTS[d.segment].suggestion;
+  // Começa com o estilo do nicho (o mesmo da página inicial); o dono troca em Aparência
+  const style = styleForSegment(d.segment);
+  const colors = THEME_STYLES[style].defaults;
   await supabase.from("businesses").update({
     whatsapp: normalizePhone(d.whatsapp),
-    theme: { primary: suggestion.primary, background: suggestion.background, image: null },
+    theme: { style, primary: colors.primary, background: colors.background, image: null },
   }).eq("id", id);
   await supabase.from("services").insert({ business_id: id, name: d.serviceName, duration_minutes: d.duration, price_cents: priceCents });
 

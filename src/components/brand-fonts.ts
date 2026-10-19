@@ -6,4 +6,4 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["600"], styl
 const archivoBlack = Archivo_Black({ subsets: ["latin"], weight: "400", variable: "--font-archivo-black", display: "swap" });
 const barlow = Barlow_Condensed({ subsets: ["latin"], weight: ["800"], style: ["italic"], variable: "--font-barlow", display: "swap" });
 
-export const landingFonts = [manrope, playfair, cormorant, archivoBlack, barlow].map((f) => f.variable).join(" ");
+export const brandFonts = [manrope, playfair, cormorant, archivoBlack, barlow].map((f) => f.variable).join(" ");

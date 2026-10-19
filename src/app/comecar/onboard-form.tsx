@@ -1,11 +1,11 @@
 "use client";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "@/components/submit-button";
-import { SEGMENT_OPTIONS } from "@/lib/segments";
+import { SEGMENT_OPTIONS, type Segment } from "@/lib/segments";
 import { slugify } from "@/lib/slug";
 import { createBusiness, type OnboardState } from "./actions";
 
-export function OnboardForm({ host }: { host: string }) {
+export function OnboardForm({ host, defaultSegment }: { host: string; defaultSegment: Segment }) {
   const [state, action] = useActionState<OnboardState, FormData>(createBusiness, {});
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -19,7 +19,7 @@ export function OnboardForm({ host }: { host: string }) {
         <div><label className="label" htmlFor="name">Nome</label><input id="name" name="name" className="field" placeholder="Ex.: Barbearia do Zé" value={name} onChange={(e) => setName(e.target.value)} required /></div>
         <div>
           <label className="label" htmlFor="segment">Ramo</label>
-          <select id="segment" name="segment" className="field" defaultValue="barbearia">
+          <select id="segment" name="segment" className="field" defaultValue={defaultSegment}>
             {SEGMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>

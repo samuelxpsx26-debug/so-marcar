@@ -121,3 +121,20 @@ describe("renderTrialNotice", () => {
     expect(m.text).toContain("Cadastrar cartão");
   });
 });
+
+describe("resolveTheme estilos", () => {
+  it("usa o estilo do nicho quando o tema não tem estilo salvo", () => {
+    expect(resolveTheme({ primary: "#d9a84e", background: "#15110d" }, "barbearia").style).toBe("couro");
+    expect(resolveTheme(null, "manicure").style).toBe("champagne");
+    expect(resolveTheme(null, "clinica").style).toBe("moderno");
+  });
+  it("respeita o estilo salvo e ignora estilo inválido", () => {
+    expect(resolveTheme({ style: "neon" }, "salao").style).toBe("neon");
+    expect(resolveTheme({ style: "xpto" as never }, "personal").style).toBe("energia");
+  });
+  it("foto de capa vai para a capa, não para o fundo", () => {
+    const t = resolveTheme({ image: "https://exemplo.com/a.jpg" }, "barbearia");
+    expect(t.cover).toContain("https://exemplo.com/a.jpg");
+    expect(t.backgroundImage).not.toContain("exemplo.com");
+  });
+});

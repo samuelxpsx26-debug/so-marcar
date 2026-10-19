@@ -2,40 +2,41 @@
 import { useActionState, useState } from "react";
 import { SubmitButton } from "@/components/submit-button";
 import { SEGMENTS, type Segment } from "@/lib/segments";
-import { resolveTheme, type Theme } from "@/lib/theme";
+import { resolveTheme, styleForSegment, THEME_STYLE_IDS, THEME_STYLES, type Theme, type ThemeStyle } from "@/lib/theme";
 import { saveTheme, type R } from "./actions";
-
-const PALETTES = [
-  { name: "Violeta", primary: "#7c3aed", background: "#ffffff" },
-  { name: "Noite dourada", primary: "#d4a24c", background: "#14100c" },
-  { name: "Rosé", primary: "#e86fa6", background: "#1a1020" },
-  { name: "Menta", primary: "#2f8f7a", background: "#f6fbfa" },
-  { name: "Energia", primary: "#22c55e", background: "#0b1220" },
-  { name: "Clássico", primary: "#111111", background: "#f5f5f4" },
-  { name: "Coral", primary: "#f97316", background: "#fff7ed" },
-  { name: "Oceano", primary: "#0284c7", background: "#f0f9ff" },
-];
 
 export function ThemeEditor({ name, segment, theme, description }: { name: string; segment: Segment; theme: Theme; description: string | null }) {
   const [state, action] = useActionState<R, FormData>(saveTheme, {});
+  const [style, setStyle] = useState<ThemeStyle>(theme.style ?? styleForSegment(segment));
   const [primary, setPrimary] = useState(theme.primary ?? SEGMENTS[segment].suggestion.primary);
   const [background, setBackground] = useState(theme.background ?? SEGMENTS[segment].suggestion.background);
   const [image, setImage] = useState(theme.image ?? "");
-  const t = resolveTheme({ primary, background, image }, segment);
+  const t = resolveTheme({ style, primary, background, image }, segment);
+  const d = t.display;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
       <form action={action} className="card space-y-5">
         <div>
-          <p className="label">Combinações prontas</p>
-          <div className="grid grid-cols-4 gap-2">
-            {PALETTES.map((p) => (
-              <button key={p.name} type="button" onClick={() => { setPrimary(p.primary); setBackground(p.background); }} className="rounded-xl border border-line p-2 text-left text-[11px]">
-                <span className="flex h-8 overflow-hidden rounded-lg"><span className="flex-1" style={{ background: p.background }} /><span className="w-1/3" style={{ background: p.primary }} /></span>
-                <span className="mt-1 block truncate">{p.name}</span>
-              </button>
-            ))}
+          <p className="label">Estilo</p>
+          <input type="hidden" name="style" value={style} />
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {THEME_STYLE_IDS.map((id) => {
+              const info = THEME_STYLES[id];
+              const preview = resolveTheme({ style: id, ...info.defaults }, segment);
+              return (
+                <button key={id} type="button" aria-pressed={style === id}
+                  onClick={() => { setStyle(id); setPrimary(info.defaults.primary); setBackground(info.defaults.background); }}
+                  className={`overflow-hidden rounded-xl border text-left transition ${style === id ? "border-brand ring-4 ring-brand/15" : "border-line"}`}>
+                  <span className="flex h-16 items-end p-2.5 text-white" style={{ backgroundImage: preview.cover }}>
+                    <span className="text-base leading-none" style={{ fontFamily: info.display.family, fontWeight: info.display.weight, fontStyle: info.display.style, textTransform: info.display.transform }}>{info.label}</span>
+                  </span>
+                  <span className="block px-2.5 py-2 text-xs text-muted">{info.hint}</span>
+                </button>
+              );
+            })}
           </div>
+          <p className="mt-2 text-xs text-muted">Trocar o estilo aplica as cores dele. Depois você ajusta as cores como quiser.</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <ColorField label="Cor dos botões" name="primary" value={primary} onChange={setPrimary} />
@@ -43,9 +44,9 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
         </div>
         {t.lowContrastPrimary && <p className="rounded-xl bg-amber-50 p-3 text-sm text-warn">A cor dos botões está muito parecida com o fundo. Seus clientes podem ter dificuldade para ver.</p>}
         <div>
-          <label className="label" htmlFor="image">Imagem de fundo (link https, opcional)</label>
+          <label className="label" htmlFor="image">Foto de capa (link https, opcional)</label>
           <input id="image" name="image" className="field" placeholder="https://…" value={image} onChange={(e) => setImage(e.target.value)} />
-          <p className="mt-1 text-xs text-muted">Sem imagem, usamos um fundo próprio para {SEGMENTS[segment].label.toLowerCase()}. Envio de fotos direto pelo app vem na próxima versão.</p>
+          <p className="mt-1 text-xs text-muted">Sem foto, a capa usa a arte do estilo escolhido. Envio de fotos direto pelo app vem na próxima versão.</p>
         </div>
         <div>
           <label className="label" htmlFor="description">Frase de apresentação</label>
@@ -58,9 +59,11 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
 
       <div className="lg:sticky lg:top-8 lg:self-start">
         <p className="label">Prévia</p>
-        <div className="overflow-hidden rounded-[2rem] border-8 border-zinc-900 shadow-xl" style={{ backgroundColor: t.background, backgroundImage: t.backgroundImage, backgroundSize: "cover", color: t.text }}>
-          <div className="space-y-3 p-5" style={{ minHeight: 420 }}>
-            <p className="text-xl font-bold">{name}</p>
+        <div className="overflow-hidden rounded-[2rem] border-8 border-zinc-900 shadow-xl" style={{ backgroundColor: t.background, backgroundImage: t.backgroundImage, color: t.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
+          <div className="space-y-3 p-4" style={{ minHeight: 420 }}>
+            <div className="flex min-h-32 flex-col justify-end rounded-2xl p-4 text-white" style={{ backgroundImage: t.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
+              <p className="text-2xl leading-none" style={{ fontFamily: d.family, fontWeight: d.weight, fontStyle: d.style, textTransform: d.transform, letterSpacing: d.tracking }}>{name}</p>
+            </div>
             <p className="text-sm opacity-75">Escolha o serviço</p>
             {["Serviço principal", "Outro serviço"].map((s, i) => (
               <div key={s} className="rounded-2xl p-3 text-sm" style={{ background: t.text === "#ffffff" ? "#ffffff14" : "#00000008", outline: i === 0 ? `2px solid ${t.primary}` : undefined }}>
