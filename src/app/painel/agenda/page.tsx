@@ -4,7 +4,7 @@ import { getContext } from "@/lib/business";
 import { addDays, formatDate, localDate, zonedToUtc } from "@/lib/format";
 import { AgendaClient, type AgendaAppt } from "./agenda-client";
 import { HelpTip } from "@/components/help-tip";
-import type { CustomerPackage } from "@/lib/loyalty";
+import { packageUsable, type CustomerPackage, type OpenPackage } from "@/lib/loyalty";
 
 export const metadata: Metadata = { title: "Agenda" };
 
@@ -53,6 +53,13 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     ? await supabase.from("customer_packages").select("id, customer_id, service_id, name, sessions_total, sessions_used, price_cents, expires_at, created_at").eq("business_id", business.id).in("customer_id", ids.slice(0, 300))
     : { data: [] };
 
+  // Pacotes com sessão sobrando, para escolher o cliente no "Novo atendimento"
+  const { data: openPkgs } = await supabase.from("customer_packages")
+    .select("id, customer_id, service_id, name, sessions_total, sessions_used, price_cents, expires_at, created_at, customer:customers(name, phone)")
+    .eq("business_id", business.id).order("created_at", { ascending: false }).limit(500);
+  const now = new Date();
+  const openPackages = ((openPkgs ?? []) as unknown as OpenPackage[]).filter((k) => k.customer && packageUsable(k, now));
+
   const step = view === "dia" ? 1 : view === "semana" ? 7 : 30;
   const prev = view === "mes" ? addDays(start, -1) : addDays(date, -step);
   const next = view === "mes" ? end : addDays(date, step);
@@ -95,6 +102,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         hours={hours ?? []}
         appointments={(appts ?? []) as unknown as AgendaAppt[]}
         packages={(pkgs ?? []) as CustomerPackage[]}
+        openPackages={openPackages}
       />
     </div>
   );

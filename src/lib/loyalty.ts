@@ -11,6 +11,9 @@ export type CustomerPackage = {
   price_cents: number; expires_at: string | null; created_at: string;
 };
 
+/** Pacote vendido junto com o cliente dono dele */
+export type OpenPackage = CustomerPackage & { customer: { name: string; phone: string } | null };
+
 /** Pacote ainda utilizável numa data (tem sessão e não venceu) */
 export function packageUsable(p: CustomerPackage, at = new Date()) {
   return p.sessions_used < p.sessions_total && (!p.expires_at || new Date(p.expires_at) >= at);

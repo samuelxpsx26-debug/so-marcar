@@ -5,7 +5,7 @@ import { addDays, brl, formatTime, localDate, waLink } from "@/lib/format";
 import { SubmitButton } from "@/components/submit-button";
 import { confirmDeposit, spendPackageSession, createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
 import { notify } from "@/lib/notify-client";
-import { packageUsable, type CustomerPackage } from "@/lib/loyalty";
+import { packageUsable, type CustomerPackage, type OpenPackage } from "@/lib/loyalty";
 
 export type AgendaAppt = {
   id: string; starts_at: string; ends_at: string; status: string; source: string; price_cents: number; notes: string | null;
@@ -20,7 +20,7 @@ type Hour = { professional_id: string; weekday: number; start_time: string; end_
 
 type Props = {
   view: "dia" | "semana" | "mes"; date: string; start: string; end: string; today: string; timezone: string;
-  professionals: Pro[]; services: Service[]; hours: Hour[]; appointments: AgendaAppt[]; packages?: CustomerPackage[];
+  professionals: Pro[]; services: Service[]; hours: Hour[]; appointments: AgendaAppt[]; packages?: CustomerPackage[]; openPackages?: OpenPackage[];
 };
 
 const PX_PER_MIN = 1.4;
@@ -296,17 +296,39 @@ function NewSheet({ p, initial, onClose }: { p: Props; initial: { pro?: string; 
   const [state, action] = useActionState<ActionResult, FormData>(createAppointment, {});
   const defaults = useMemo(() => initial, [initial]);
   useEffect(() => { if (state.ok) onClose(); }, [state.ok, onClose]);
+  const open = (p.openPackages ?? []).filter((k) => p.services.some((s) => s.id === k.service_id));
+  const [pkgId, setPkgId] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [serviceId, setServiceId] = useState(p.services[0]?.id ?? "");
+  const pkg = open.find((k) => k.id === pkgId);
+  const choosePackage = (id: string) => {
+    setPkgId(id);
+    const k = open.find((x) => x.id === id);
+    if (k?.customer) { setName(k.customer.name); setPhone(k.customer.phone.replace(/^55(?=\d{10,11}$)/, "")); setServiceId(k.service_id); }
+  };
   return (
     <Sheet title="Novo atendimento" onClose={onClose}>
+      {open.length > 0 && (
+        <div className="mb-3 rounded-xl border border-violet-200 bg-violet-50 p-3">
+          <label className="label" htmlFor="pkg">Atender cliente com pacote</label>
+          <select id="pkg" className="field" value={pkgId} onChange={(e) => choosePackage(e.target.value)}>
+            <option value="">Não, atendimento normal</option>
+            {open.map((k) => <option key={k.id} value={k.id}>{k.customer?.name} · {k.name} ({k.sessions_total - k.sessions_used} de {k.sessions_total} restantes)</option>)}
+          </select>
+          {pkg && <p className="mt-2 text-xs text-violet-800">Depois do atendimento, toque nele na agenda e use &quot;Atendido usando o pacote&quot;. A sessão só é descontada nessa hora.</p>}
+        </div>
+      )}
       <form action={action} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2"><label className="label" htmlFor="customerName">Cliente</label><input id="customerName" name="customerName" className="field" required /></div>
-          <div className="col-span-2"><label className="label" htmlFor="customerPhone">WhatsApp</label><input id="customerPhone" name="customerPhone" inputMode="tel" className="field" placeholder="(11) 99999-9999" required /></div>
+          <div className="col-span-2"><label className="label" htmlFor="customerName">Cliente</label><input id="customerName" name="customerName" className="field" value={name} onChange={(e) => setName(e.target.value)} required /></div>
+          <div className="col-span-2"><label className="label" htmlFor="customerPhone">WhatsApp</label><input id="customerPhone" name="customerPhone" inputMode="tel" className="field" placeholder="(11) 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} required /></div>
           <div className="col-span-2">
             <label className="label" htmlFor="serviceId">Serviço</label>
-            <select id="serviceId" name="serviceId" className="field" required>
-              {p.services.map((s) => <option key={s.id} value={s.id}>{s.name} · {s.duration_minutes} min · {brl(s.price_cents)}</option>)}
+            <select id="serviceId" name="serviceId" className="field" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
+              {p.services.map((s) => <option key={s.id} value={s.id}>{s.name} · {s.duration_minutes} min · {pkg?.service_id === s.id ? "pacote" : brl(s.price_cents)}</option>)}
             </select>
+            {open.length === 0 && <p className="mt-1 text-xs text-muted">Pacotes não são um serviço: venda o pacote ao cliente em Clientes e ele aparece aqui para escolher.</p>}
           </div>
           <div className="col-span-2">
             <label className="label" htmlFor="professionalId">Profissional</label>
