@@ -4,6 +4,7 @@ import { computeValue } from "../value";
 import { pricePerDay, zonedToUtc, localDate, addDays, normalizePhone } from "../format";
 import { isValidSlug, slugify } from "../slug";
 import { contrast, resolveTheme } from "../theme";
+import { mediaPathFromUrl, sniffImage } from "../media";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -136,5 +137,21 @@ describe("resolveTheme estilos", () => {
     const t = resolveTheme({ image: "https://exemplo.com/a.jpg" }, "barbearia");
     expect(t.cover).toContain("https://exemplo.com/a.jpg");
     expect(t.backgroundImage).not.toContain("exemplo.com");
+  });
+});
+
+describe("fotos", () => {
+  it("reconhece JPEG, PNG e WebP pelo conteúdo e recusa o resto", () => {
+    expect(sniffImage(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
+    expect(sniffImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe("image/png");
+    expect(sniffImage(new TextEncoder().encode("RIFF\0\0\0\0WEBPVP8 "))).toBe("image/webp");
+    expect(sniffImage(new TextEncoder().encode("<svg onload=alert(1)>"))).toBeNull();
+    expect(sniffImage(new TextEncoder().encode("GIF89a"))).toBeNull();
+  });
+  it("só reconhece como nossa a foto do bucket do próprio projeto", () => {
+    const base = "https://abc.supabase.co";
+    expect(mediaPathFromUrl(`${base}/storage/v1/object/public/midia/biz-1/capa-x.jpg`, base)).toBe("biz-1/capa-x.jpg");
+    expect(mediaPathFromUrl("https://outro.site/foto.jpg", base)).toBeNull();
+    expect(mediaPathFromUrl(null, base)).toBeNull();
   });
 });

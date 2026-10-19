@@ -3,19 +3,29 @@ import { useActionState, useState } from "react";
 import { SubmitButton } from "@/components/submit-button";
 import { SEGMENTS, type Segment } from "@/lib/segments";
 import { resolveTheme, styleForSegment, THEME_STYLE_IDS, THEME_STYLES, type Theme, type ThemeStyle } from "@/lib/theme";
-import { saveTheme, type R } from "./actions";
+import { ImageUpload } from "@/components/image-upload";
+import { removeCover, removeLogo, saveTheme, uploadCover, uploadLogo, type R } from "./actions";
 
 export function ThemeEditor({ name, segment, theme, description }: { name: string; segment: Segment; theme: Theme; description: string | null }) {
   const [state, action] = useActionState<R, FormData>(saveTheme, {});
   const [style, setStyle] = useState<ThemeStyle>(theme.style ?? styleForSegment(segment));
   const [primary, setPrimary] = useState(theme.primary ?? SEGMENTS[segment].suggestion.primary);
   const [background, setBackground] = useState(theme.background ?? SEGMENTS[segment].suggestion.background);
-  const [image, setImage] = useState(theme.image ?? "");
-  const t = resolveTheme({ style, primary, background, image }, segment);
+  const [image, setImage] = useState<string | null>(theme.image ?? null);
+  const [logo, setLogo] = useState<string | null>(theme.logo ?? null);
+  const t = resolveTheme({ style, primary, background, image, logo }, segment);
   const d = t.display;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="space-y-6">
+      <section className="card space-y-5">
+        <ImageUpload kind="capa" shape="wide" label="Foto de capa" current={image} upload={uploadCover} remove={removeCover} onChange={setImage}
+          hint="A fachada, o espaço por dentro ou um trabalho seu. Sem foto, a capa usa a arte do estilo." />
+        <ImageUpload kind="logo" label="Logo" current={logo} upload={uploadLogo} remove={removeLogo} onChange={setLogo}
+          hint="Aparece no topo da página. Sem logo, mostramos a inicial do nome." />
+        <p className="text-xs text-muted">As fotos são salvas na hora, sem precisar clicar em salvar.</p>
+      </section>
       <form action={action} className="card space-y-5">
         <div>
           <p className="label">Estilo</p>
@@ -44,11 +54,6 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
         </div>
         {t.lowContrastPrimary && <p className="rounded-xl bg-amber-50 p-3 text-sm text-warn">A cor dos botões está muito parecida com o fundo. Seus clientes podem ter dificuldade para ver.</p>}
         <div>
-          <label className="label" htmlFor="image">Foto de capa (link https, opcional)</label>
-          <input id="image" name="image" className="field" placeholder="https://…" value={image} onChange={(e) => setImage(e.target.value)} />
-          <p className="mt-1 text-xs text-muted">Sem foto, a capa usa a arte do estilo escolhido. Envio de fotos direto pelo app vem na próxima versão.</p>
-        </div>
-        <div>
           <label className="label" htmlFor="description">Frase de apresentação</label>
           <textarea id="description" name="description" rows={2} maxLength={1000} className="field" defaultValue={description ?? ""} placeholder="Ex.: Cortes clássicos e modernos no centro de Campinas." />
         </div>
@@ -56,12 +61,14 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
         {state.ok && <p role="status" className="text-sm text-good">Salvo! Sua página já está com a nova cara.</p>}
         <SubmitButton>Salvar aparência</SubmitButton>
       </form>
+      </div>
 
       <div className="lg:sticky lg:top-8 lg:self-start">
         <p className="label">Prévia</p>
         <div className="overflow-hidden rounded-[2rem] border-8 border-zinc-900 shadow-xl" style={{ backgroundColor: t.background, backgroundImage: t.backgroundImage, color: t.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
           <div className="space-y-3 p-4" style={{ minHeight: 420 }}>
-            <div className="flex min-h-32 flex-col justify-end rounded-2xl p-4 text-white" style={{ backgroundImage: t.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div className="flex min-h-32 flex-col justify-end gap-2 rounded-2xl p-4 text-white" style={{ backgroundImage: t.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
+              {t.logo ? <img src={t.logo} alt="" className="h-10 w-10 rounded-xl bg-white object-contain" /> : <span className="grid h-10 w-10 place-items-center rounded-xl font-extrabold" style={{ background: t.primary, color: t.onPrimary }}>{name.slice(0, 1).toUpperCase()}</span>}
               <p className="text-2xl leading-none" style={{ fontFamily: d.family, fontWeight: d.weight, fontStyle: d.style, textTransform: d.transform, letterSpacing: d.tracking }}>{name}</p>
             </div>
             <p className="text-sm opacity-75">Escolha o serviço</p>

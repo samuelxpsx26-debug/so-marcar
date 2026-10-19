@@ -34,7 +34,9 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
       <div className="mx-auto max-w-lg px-4 pb-16 pt-4">
         <header className="mb-8">
           <div className="relative flex min-h-48 flex-col justify-end overflow-hidden rounded-3xl p-5 text-white shadow-xl" style={{ backgroundImage: theme.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
-            <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl text-2xl font-extrabold shadow-lg" style={{ background: theme.primary, color: theme.onPrimary }}>{b.name.slice(0, 1).toUpperCase()}</div>
+            {theme.logo
+              ? <img src={theme.logo} alt={`Logo de ${b.name}`} className="mb-3 h-16 w-16 rounded-2xl bg-white object-contain shadow-lg" />
+              : <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl text-2xl font-extrabold shadow-lg" style={{ background: theme.primary, color: theme.onPrimary }}>{b.name.slice(0, 1).toUpperCase()}</div>}
             <h1 className="text-4xl leading-none" style={{ fontFamily: theme.display.family, fontWeight: theme.display.weight, fontStyle: theme.display.style, textTransform: theme.display.transform, letterSpacing: theme.display.tracking }}>{b.name}</h1>
           </div>
           {b.description && <p className="mt-4 opacity-80">{b.description}</p>}

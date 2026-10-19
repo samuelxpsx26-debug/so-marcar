@@ -2,9 +2,10 @@
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { formatDate, formatTime } from "@/lib/format";
 import { SubmitButton } from "@/components/submit-button";
-import { addTimeOff, removeTimeOff, saveHours, saveProfessional, saveProServices, setProfessionalActive, type R } from "./actions";
+import { ImageUpload } from "@/components/image-upload";
+import { addTimeOff, removeProfessionalPhoto, removeTimeOff, uploadProfessionalPhoto, saveHours, saveProfessional, saveProServices, setProfessionalActive, type R } from "./actions";
 
-type Pro = { id: string; name: string; bio: string | null; active: boolean };
+type Pro = { id: string; name: string; bio: string | null; active: boolean; avatar_url: string | null };
 type Hour = { professional_id: string; weekday: number; start_time: string; end_time: string };
 type Off = { id: string; professional_id: string; starts_at: string; ends_at: string; reason: string | null };
 type DayRow = { on: boolean; start: string; end: string; pause: boolean; pauseStart: string; pauseEnd: string };
@@ -108,6 +109,12 @@ function ProDetail({ pro, timezone, hours, services, links, timeOff }: { pro: Pr
           <button disabled={pending} onClick={() => start(async () => report(await saveProServices(pro.id, svc), "Serviços salvos."))} className="btn btn-ghost mt-3">Salvar serviços</button>
         </section>
       )}
+
+      <section>
+        <ImageUpload kind="profissional" shape="round" label="Foto" current={pro.avatar_url}
+          upload={(form) => uploadProfessionalPhoto(pro.id, form)} remove={() => removeProfessionalPhoto(pro.id)}
+          hint="O cliente vê na hora de escolher com quem agendar." />
+      </section>
 
       <section>
         <h3 className="font-semibold">Folgas, férias e bloqueios</h3>

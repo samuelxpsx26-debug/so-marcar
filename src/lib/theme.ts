@@ -2,7 +2,7 @@ import { SEGMENTS, type Segment } from "./segments";
 
 export type ThemeStyle = "couro" | "champagne" | "neon" | "energia" | "moderno";
 
-export type Theme = { primary: string; background: string; text?: string; image?: string | null; style?: ThemeStyle };
+export type Theme = { primary: string; background: string; text?: string; image?: string | null; logo?: string | null; style?: ThemeStyle };
 
 type StyleInfo = {
   label: string;
@@ -95,6 +95,7 @@ export function resolveTheme(raw: Partial<Theme> | null | undefined, segment: Se
   const background = raw?.background && HEX.test(raw.background) ? raw.background : fallback.suggestion.background;
   const text = readableOn(background);
   const image = raw?.image && isSafeImageUrl(raw.image) ? raw.image : null;
+  const logo = raw?.logo && isSafeImageUrl(raw.logo) ? raw.logo : null;
   const style: ThemeStyle = raw?.style && raw.style in THEME_STYLES ? raw.style : styleForSegment(segment);
   const dark = text === "#ffffff";
   return {
@@ -106,6 +107,7 @@ export function resolveTheme(raw: Partial<Theme> | null | undefined, segment: Se
     text,
     onPrimary: readableOn(primary),
     image,
+    logo,
     backgroundImage: styleTexture(style, primary, dark),
     lowContrastPrimary: contrast(primary, background) < 2,
   };

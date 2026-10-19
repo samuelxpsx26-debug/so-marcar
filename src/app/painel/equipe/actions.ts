@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { canManage, getContext } from "@/lib/business";
 import { zonedToUtc } from "@/lib/format";
+import { deleteBusinessImage, storeBusinessImage } from "@/lib/media-server";
 
 export type R = { ok?: boolean; error?: string };
 const done = (): R => { revalidatePath("/painel/equipe"); return { ok: true }; };
@@ -83,4 +84,30 @@ export async function removeTimeOff(id: string): Promise<R> {
   const { supabase, business } = await getContext();
   await supabase.from("time_off").delete().eq("id", id).eq("business_id", business.id);
   return done();
+}
+
+async function setProfessionalPhoto(id: string, url: string | null): Promise<R & { url?: string | null }> {
+  const { supabase, business } = await getContext();
+  const { data: pro } = await supabase.from("professionals").select("avatar_url").eq("id", id).eq("business_id", business.id).single();
+  if (!pro) return { error: "Profissional não encontrado" };
+  const { error } = await supabase.from("professionals").update({ avatar_url: url }).eq("id", id).eq("business_id", business.id);
+  if (error) return { error: "Não foi possível salvar." };
+  await deleteBusinessImage(business.id, pro.avatar_url);
+  revalidatePath(`/${business.slug}`);
+  revalidatePath("/painel/equipe");
+  return { ok: true, url };
+}
+
+export async function uploadProfessionalPhoto(id: string, form: FormData) {
+  const { business, role } = await getContext();
+  if (!canManage(role)) return { error: "Sem permissão" };
+  const r = await storeBusinessImage(business.id, "profissional", form.get("file"));
+  if ("error" in r) return { error: r.error };
+  return setProfessionalPhoto(id, r.url);
+}
+
+export async function removeProfessionalPhoto(id: string) {
+  const { role } = await getContext();
+  if (!canManage(role)) return { error: "Sem permissão" };
+  return setProfessionalPhoto(id, null);
 }

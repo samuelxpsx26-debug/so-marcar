@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Equipe" };
 export default async function EquipePage() {
   const { supabase, business } = await getContext();
   const [{ data: pros }, { data: hours }, { data: services }, { data: links }, { data: off }] = await Promise.all([
-    supabase.from("professionals").select("id, name, bio, active").eq("business_id", business.id).order("active", { ascending: false }).order("sort_order").order("name"),
+    supabase.from("professionals").select("id, name, bio, active, avatar_url").eq("business_id", business.id).order("active", { ascending: false }).order("sort_order").order("name"),
     supabase.from("working_hours").select("professional_id, weekday, start_time, end_time").eq("business_id", business.id).order("start_time"),
     supabase.from("services").select("id, name").eq("business_id", business.id).eq("active", true).order("name"),
     supabase.from("professional_services").select("professional_id, service_id").eq("business_id", business.id),

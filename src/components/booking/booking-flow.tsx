@@ -91,7 +91,9 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
             </button>
             {pros.map((p) => (
               <button key={p.id} onClick={() => { setProId(p.id); setStep("time"); }} className="rounded-2xl p-4 text-left" style={{ background: soft }}>
-                <span className="mb-2 grid h-10 w-10 place-items-center rounded-full font-bold" style={primaryBtn}>{p.name.slice(0, 1).toUpperCase()}</span>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt="" className="mb-2 h-12 w-12 rounded-full object-cover" />
+                  : <span className="mb-2 grid h-10 w-10 place-items-center rounded-full font-bold" style={primaryBtn}>{p.name.slice(0, 1).toUpperCase()}</span>}
                 <span className="block truncate font-semibold">{p.name}</span>
                 {p.bio && <span className="block truncate text-sm opacity-70">{p.bio}</span>}
               </button>
