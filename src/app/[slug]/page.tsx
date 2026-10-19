@@ -30,11 +30,11 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
   const theme = resolveTheme(b.theme, b.segment as Segment);
 
   return (
-    <main className={`${brandFonts} relative isolate min-h-dvh`} style={{ backgroundColor: theme.photo ? "#0b0b0d" : theme.background, backgroundImage: theme.photo ? undefined : theme.backgroundImage, color: theme.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
-      {theme.backdrop && <div aria-hidden="true" className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: theme.backdrop }} />}
+    <main className={`${brandFonts} relative isolate min-h-dvh`} style={{ backgroundColor: theme.ground, backgroundImage: theme.photo ? undefined : theme.backgroundImage, color: theme.text, textShadow: theme.halo, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
+      {theme.backdrop && <div aria-hidden="true" className="fixed inset-0 -z-10" style={theme.backdrop} />}
       <div className="mx-auto max-w-lg px-4 pb-16 pt-4">
         <header className="mb-8">
-          <div className="relative flex min-h-48 flex-col justify-end overflow-hidden rounded-3xl p-5 text-white shadow-xl" style={{ backgroundImage: theme.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
+          <div className="relative flex min-h-48 flex-col justify-end overflow-hidden rounded-3xl p-5 text-white shadow-xl" style={{ textShadow: "none", backgroundColor: "#0b0b0e", backgroundImage: theme.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
             {theme.logo
               ? <img src={theme.logo} alt={`Logo de ${b.name}`} className="mb-3 h-16 w-16 rounded-2xl bg-white object-contain shadow-lg" />
               : <div className="mb-3 grid h-14 w-14 place-items-center rounded-2xl text-2xl font-extrabold shadow-lg" style={{ background: theme.primary, color: theme.onPrimary }}>{b.name.slice(0, 1).toUpperCase()}</div>}

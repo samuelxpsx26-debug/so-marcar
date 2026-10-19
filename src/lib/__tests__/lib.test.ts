@@ -5,7 +5,8 @@ import { pricePerDay, zonedToUtc, localDate, addDays, normalizePhone } from "../
 import { isValidSlug, slugify } from "../slug";
 import { contrast, resolveTheme } from "../theme";
 import { mediaPathFromUrl, sniffImage } from "../media";
-import { BACKDROPS } from "../backgrounds";
+import { BACKDROPS, backgroundCatalog } from "../backgrounds";
+import { PATTERNS } from "../patterns";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -162,7 +163,7 @@ describe("foto de fundo", () => {
     const t = resolveTheme({ style: "champagne", primary: "#9a4558", background: "#f6efe8" }, "salao");
     expect(t.photo).toContain(BACKDROPS.champagne[0].photo);
     expect(t.text).toBe("#ffffff");
-    expect(t.backdrop).toContain(t.photo!);
+    expect(String(t.backdrop?.backgroundImage)).toContain(t.photo!);
   });
   it("null desliga a foto e volta às cores do dono", () => {
     const t = resolveTheme({ style: "champagne", primary: "#9a4558", background: "#f6efe8", bg: null }, "salao");
@@ -179,5 +180,18 @@ describe("foto de fundo", () => {
     const ids = Object.values(BACKDROPS).flat().map((b) => b.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const list of Object.values(BACKDROPS)) expect(list.length).toBeGreaterThanOrEqual(3);
+  });
+  it("estampa e foto limpa deixam o texto escuro ou claro conforme o tom", () => {
+    const claro = resolveTheme({ bg: "e-unhas-rosa" }, "manicure");
+    expect(claro.text).toBe("#111111");
+    expect(claro.ground).toBe("#fbf8f3");
+    expect(String(claro.backdrop?.backgroundImage)).toContain("data:image/svg+xml");
+    expect(resolveTheme({ bg: "e-barbearia-lousa" }, "barbearia").text).toBe("#ffffff");
+    expect(resolveTheme({ bg: "limpa-unhas-1" }, "manicure").text).toBe("#111111");
+  });
+  it("o seletor mostra primeiro o nicho do cliente", () => {
+    const c = backgroundCatalog("manicure", "champagne");
+    expect(c.mine.slice(0, 3).map((i) => i.id)).toEqual(PATTERNS.filter((p) => p.niche === "unhas").map((p) => p.id));
+    expect(c.more.flatMap((g) => g.items).some((i) => c.mine.some((m) => m.id === i.id))).toBe(false);
   });
 });

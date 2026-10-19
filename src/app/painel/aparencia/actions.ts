@@ -4,7 +4,7 @@ import { z } from "zod";
 import { canManage, getContext } from "@/lib/business";
 import { THEME_STYLE_IDS, type Theme, type ThemeStyle } from "@/lib/theme";
 import { deleteBusinessImage, storeBusinessImage } from "@/lib/media-server";
-import { findBackdrop } from "@/lib/backgrounds";
+import { isCatalogBackground } from "@/lib/backgrounds";
 
 export type R = { ok?: boolean; error?: string; url?: string | null };
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida");
@@ -24,8 +24,8 @@ export async function saveTheme(_: R, form: FormData): Promise<R> {
   const { style, primary, background, bg: choice = "upload", description } = parsed.data;
   const { data: cur } = await supabase.from("businesses").select("theme").eq("id", business.id).single();
   const prev = (cur?.theme ?? {}) as Theme;
-  const uploaded = prev.bg && !findBackdrop(prev.bg) ? prev.bg : null;
-  const bg = choice === "none" ? null : choice === "auto" ? undefined : findBackdrop(choice) ? choice : choice === "upload" && uploaded ? uploaded : prev.bg;
+  const uploaded = prev.bg && !isCatalogBackground(prev.bg) ? prev.bg : null;
+  const bg = choice === "none" ? null : choice === "auto" ? undefined : isCatalogBackground(choice) ? choice : choice === "upload" && uploaded ? uploaded : prev.bg;
   const next: Theme = { ...prev, style, primary, background, bg };
   if (bg === undefined) delete next.bg;
   const { error } = await supabase.from("businesses").update({ theme: next, description: description || null }).eq("id", business.id);
@@ -84,7 +84,7 @@ export async function removeBackground(): Promise<R> {
   delete next.bg;
   const { error } = await supabase.from("businesses").update({ theme: next }).eq("id", business.id);
   if (error) return { error: "Não foi possível salvar." };
-  if (prev.bg && !findBackdrop(prev.bg)) await deleteBusinessImage(business.id, prev.bg);
+  if (prev.bg && !isCatalogBackground(prev.bg)) await deleteBusinessImage(business.id, prev.bg);
   refresh(business.slug);
   return { ok: true, url: null };
 }

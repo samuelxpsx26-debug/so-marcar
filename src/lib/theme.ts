@@ -1,5 +1,6 @@
 import { SEGMENTS, type Segment } from "./segments";
-import { BACKDROPS, backdropUrl, findBackdrop } from "./backgrounds";
+import type { CSSProperties } from "react";
+import { backgroundLayer, type Layer } from "./backgrounds";
 
 export type ThemeStyle = "couro" | "champagne" | "neon" | "energia" | "moderno";
 
@@ -91,13 +92,21 @@ export function isSafeImageUrl(url: string): boolean {
   }
 }
 
-/** URL da foto de fundo: do pacote, enviada pelo dono, ou nenhuma */
+function backdropStyle(layer: Layer, primary: string): CSSProperties {
+  // Véu da cor da estampa por cima: os ícones ficam visíveis mas não brigam com o texto
+  if (layer.kind === "estampa") {
+    const veil = rgba(layer.ground!, 0.5);
+    return { backgroundColor: layer.ground, backgroundImage: `linear-gradient(${veil}, ${veil}), url("${layer.image}")`, backgroundSize: "auto, 440px", backgroundRepeat: "repeat" };
+  }
+  const veil = layer.tone === "dark"
+    ? `radial-gradient(1000px 600px at 85% -10%, ${rgba(primary, 0.22)}, transparent 60%), linear-gradient(180deg, rgba(8,8,10,.5), rgba(8,8,10,.78) 60%, rgba(8,8,10,.9))`
+    : "linear-gradient(180deg, rgba(250,249,246,.55), rgba(250,249,246,.78) 60%, rgba(250,249,246,.88))";
+  return { backgroundImage: `${veil}, url("${layer.image}")`, backgroundSize: "cover", backgroundPosition: "center" };
+}
+
+/** URL (ou estampa) do fundo da página, para quem só precisa saber se há foto */
 export function backgroundPhoto(bg: string | null | undefined, style: ThemeStyle): string | null {
-  if (bg === null) return null;
-  if (bg === undefined) return backdropUrl(BACKDROPS[style][0]);
-  const pack = findBackdrop(bg);
-  if (pack) return backdropUrl(pack);
-  return isSafeImageUrl(bg) ? bg : null;
+  return backgroundLayer(bg, style, isSafeImageUrl)?.image ?? null;
 }
 
 /** Aceita o tema salvo e devolve algo sempre legível. Cores inválidas caem no padrão do nicho. */
@@ -109,10 +118,12 @@ export function resolveTheme(raw: Partial<Theme> | null | undefined, segment: Se
   const image = raw?.image && isSafeImageUrl(raw.image) ? raw.image : null;
   const logo = raw?.logo && isSafeImageUrl(raw.logo) ? raw.logo : null;
   const style: ThemeStyle = raw?.style && raw.style in THEME_STYLES ? raw.style : styleForSegment(segment);
-  const photo = backgroundPhoto(raw?.bg, style);
-  // Com foto de fundo a página fica escura (como uma vitrine à noite): texto claro e cartões translúcidos
-  const pageText = photo ? "#ffffff" : text;
+  const layer = backgroundLayer(raw?.bg, style, isSafeImageUrl);
+  const photo = layer?.image ?? null;
+  // Foto de ambiente: escurecida, texto claro. Foto limpa: clareada, texto escuro. Estampa: cor própria.
+  const pageText = layer ? (layer.tone === "dark" ? "#ffffff" : "#111111") : text;
   const dark = pageText === "#ffffff";
+  const ground = layer ? layer.ground ?? (dark ? "#0b0b0d" : "#f6f5f2") : background;
   return {
     style,
     display: THEME_STYLES[style].display,
@@ -126,8 +137,13 @@ export function resolveTheme(raw: Partial<Theme> | null | undefined, segment: Se
     backgroundImage: styleTexture(style, primary, dark),
     photo,
     /** Camada fixa atrás da página: foto escurecida com um brilho da cor do negócio */
-    backdrop: photo ? `radial-gradient(1000px 600px at 85% -10%, ${rgba(primary, 0.22)}, transparent 60%), linear-gradient(180deg, rgba(8,8,10,.5), rgba(8,8,10,.78) 60%, rgba(8,8,10,.9)), url("${photo}")` : null,
-    surface: photo ? "rgba(14,14,17,.62)" : dark ? "#ffffff14" : "#0000000a",
-    lowContrastPrimary: contrast(primary, photo ? "#141416" : background) < 2,
+    /** Cor de base da página (sob a camada de fundo) */
+    ground,
+    /** Contorno suave da cor da estampa no texto solto sobre ela */
+    halo: layer?.kind === "estampa" ? `0 0 3px ${ground}, 0 0 8px ${ground}, 0 0 14px ${ground}` : undefined,
+    /** Estilo da camada fixa atrás da página, ou null sem foto/estampa */
+    backdrop: layer ? backdropStyle(layer, primary) : null,
+    surface: !layer ? (dark ? "#ffffff14" : "#0000000a") : layer.kind === "estampa" ? (dark ? "rgba(16,16,19,.86)" : "rgba(255,255,255,.9)") : dark ? "rgba(14,14,17,.62)" : "rgba(255,255,255,.84)",
+    lowContrastPrimary: contrast(primary, layer ? ground : background) < 2,
   };
 }
