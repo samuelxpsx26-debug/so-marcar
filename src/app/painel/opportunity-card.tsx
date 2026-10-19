@@ -3,8 +3,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { brl, waLink } from "@/lib/format";
 import type { Opportunity } from "@/lib/opportunities";
+import { markWaitlistNotified } from "./espera/actions";
 
 const accent: Record<Opportunity["kind"], string> = {
+  waitlist: "bg-fuchsia-500",
   fill_slots: "bg-emerald-500",
   win_back: "bg-violet-500",
   confirm_tomorrow: "bg-sky-500",
@@ -37,15 +39,15 @@ export function OpportunityCard({ o }: { o: Opportunity }) {
       {open && (
         <ul className="mt-4 divide-y divide-line rounded-xl border border-line">
           {contacts.map((c) => (
-            <li key={c.phone} className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm">
-              <span className={`truncate ${done.has(c.phone) ? "text-muted line-through" : ""}`}>{c.name}</span>
+            <li key={c.waitlistId ?? c.phone} className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm">
+              <span className={`truncate ${done.has(c.waitlistId ?? c.phone) ? "text-muted line-through" : ""}`}>{c.name}</span>
               <a
                 href={waLink(c.phone, c.message)}
                 target="_blank"
-                onClick={() => setDone(new Set(done).add(c.phone))}
+                onClick={() => { setDone(new Set(done).add(c.waitlistId ?? c.phone)); if (c.waitlistId) void markWaitlistNotified(c.waitlistId); }}
                 className="shrink-0 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white"
               >
-                {done.has(c.phone) ? "Enviado" : "Enviar"}
+                {done.has(c.waitlistId ?? c.phone) ? "Enviado" : "Enviar"}
               </a>
             </li>
           ))}

@@ -22,16 +22,20 @@ export type OpportunityInput = {
   tomorrow: DayAppointment[];
   unresolvedPast: DayAppointment[]; // já passaram e ainda estão como "confirmado"
   trialDaysLeft: number | null;
+  /** Pedidos da lista de espera cujo dia já tem horário livre no período pedido */
+  waitlistOpenings?: WaitlistOpening[];
 };
+
+export type WaitlistOpening = { entryId: string; name: string; phone: string; serviceName: string; dateLabel: string; times: string[]; priceCents: number };
 
 export type Opportunity = {
   id: string;
-  kind: "fill_slots" | "win_back" | "confirm_tomorrow" | "close_out" | "trial";
+  kind: "waitlist" | "fill_slots" | "win_back" | "confirm_tomorrow" | "close_out" | "trial";
   title: string;
   detail: string;
   valueCents: number;
   priority: number; // maior = mais importante
-  contacts?: { name: string; phone: string; message: string }[];
+  contacts?: { name: string; phone: string; message: string; waitlistId?: string }[];
   href?: string;
 };
 
@@ -58,6 +62,25 @@ export function buildOpportunities(i: OpportunityInput): Opportunity[] {
   const out: Opportunity[] = [];
   const due = dueCustomers(i.customers, i.now);
   const first = (n: string) => n.trim().split(/\s+/)[0];
+
+  const openings = i.waitlistOpenings ?? [];
+  if (openings.length > 0) {
+    out.push({
+      id: "waitlist",
+      kind: "waitlist",
+      title: `Abriu vaga para ${openings.length} ${openings.length === 1 ? "pessoa" : "pessoas"} da lista de espera`,
+      detail: "Elas pediram para ser avisadas. Quem chega primeiro no link fica com o horário.",
+      valueCents: openings.reduce((s, o) => s + o.priceCents, 0),
+      priority: 100,
+      contacts: openings.map((o) => ({
+        name: `${o.name} · ${o.dateLabel}`,
+        phone: o.phone,
+        waitlistId: o.entryId,
+        message: `Oi, ${first(o.name)}! Abriu horário para ${o.serviceName} ${o.dateLabel} no ${i.businessName}: ${o.times.slice(0, 4).join(", ")}. Para garantir, marque aqui: ${i.bookingUrl}`,
+      })),
+      href: "/painel/espera",
+    });
+  }
 
   if (i.freeSlotsToday.length > 0) {
     const fill = Math.min(i.freeSlotsToday.length, Math.max(due.length, 1));

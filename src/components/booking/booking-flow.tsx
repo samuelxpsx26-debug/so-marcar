@@ -4,9 +4,11 @@ import { createClient } from "@/lib/supabase/client";
 import { notify } from "@/lib/notify-client";
 import { brl, formatDate, formatTime, normalizePhone, waLink } from "@/lib/format";
 import { SlotPicker } from "./slot-picker";
+import { Waitlist } from "./waitlist";
+import { Input } from "./input";
 import type { PublicBusiness, ResolvedTheme, Slot } from "./types";
 
-type Step = "service" | "pro" | "time" | "details" | "done";
+type Step = "service" | "pro" | "time" | "details" | "done" | "waitlist";
 
 export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTheme }) {
   const [step, setStep] = useState<Step>("service");
@@ -17,6 +19,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ manage_token: string; starts_at: string } | null>(null);
+  const [waitDay, setWaitDay] = useState<string | null>(null);
   const idem = useMemo(() => crypto.randomUUID(), []);
 
   const service = b.services.find((s) => s.id === serviceId);
@@ -107,7 +110,14 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
           {back(pros.length > 1 ? "pro" : "service")}
           <h2 className="mb-3 text-lg font-semibold">Escolha o horário</h2>
           <SlotPicker slug={b.slug} serviceId={serviceId} professionalId={proId} timezone={tz} maxDays={b.max_days_ahead} theme={theme} selected={slot}
-            onPick={(s) => { setSlot(s); setStep("details"); }} />
+            onPick={(s) => { setSlot(s); setStep("details"); }} onWaitlist={(d) => { setWaitDay(d); setStep("waitlist"); }} />
+        </section>
+      )}
+
+      {step === "waitlist" && service && waitDay && (
+        <section>
+          {back("time")}
+          <Waitlist b={b} theme={theme} service={service} professionalId={proId} day={waitDay} />
         </section>
       )}
 
@@ -140,16 +150,6 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
         <Done b={b} theme={theme} service={service.name} proName={proName ?? ""} startsAt={result.starts_at} token={result.manage_token} customer={form.name} durationMin={service.duration_minutes} />
       )}
     </div>
-  );
-}
-
-function Input({ label, value, onChange, theme, optional, ...rest }: { label: string; value: string; onChange: (v: string) => void; theme: ResolvedTheme; optional?: boolean } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value">) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium">{label}{optional && <span className="opacity-60"> (opcional)</span>}</span>
-      <input {...rest} required={!optional} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-transparent px-3.5 py-3 text-base outline-none" style={{ border: `1px solid ${theme.text}33`, color: theme.text }} />
-    </label>
   );
 }
 

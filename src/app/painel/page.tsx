@@ -5,6 +5,7 @@ import { getContext } from "@/lib/business";
 import { addDays, brl, formatDate, formatTime, localDate, waLink, zonedToUtc } from "@/lib/format";
 import { buildOpportunities, type CustomerVisit, type DayAppointment } from "@/lib/opportunities";
 import { computeValue } from "@/lib/value";
+import { loadWaitlist, waitlistOpenings } from "@/lib/waitlist";
 import { OpportunityCard } from "./opportunity-card";
 
 export const metadata: Metadata = { title: "Hoje" };
@@ -44,6 +45,7 @@ export default async function HojePage({ searchParams }: { searchParams: Promise
   const { data: freeSlots } = firstService
     ? await supabase.rpc("get_available_slots", { p_slug: business.slug, p_service: firstService.id, p_date: today })
     : { data: [] };
+  const waitlist = await loadWaitlist(supabase, business, today);
   const freeToday = Array.from(new Set(((freeSlots ?? []) as { starts_at: string }[]).map((s) => s.starts_at)));
 
   // Benefício financeiro do mês
@@ -74,6 +76,7 @@ export default async function HojePage({ searchParams }: { searchParams: Promise
   const opportunities = buildOpportunities({
     now, businessName: business.name, bookingUrl, freeSlotsToday: freeToday, avgTicketCents: avgTicket,
     customers: [...byCustomer.values()], tomorrow: tomorrowList.map(toDay), unresolvedPast: unresolved.map(toDay), trialDaysLeft,
+    waitlistOpenings: waitlistOpenings(waitlist.entries, waitlist.open, today, tomorrow),
   });
 
   const todayRevenue = todayList.filter((a) => a.status !== "no_show").reduce((s, a) => s + a.price_cents, 0);

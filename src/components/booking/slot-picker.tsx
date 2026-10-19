@@ -7,9 +7,11 @@ import type { ResolvedTheme, Slot } from "./types";
 type Props = {
   slug: string; serviceId: string; professionalId: string | null; timezone: string; maxDays: number; theme: ResolvedTheme;
   onPick: (slot: Slot) => void; selected?: Slot | null;
+  /** Abre a lista de espera para o dia escolhido */
+  onWaitlist?: (day: string) => void;
 };
 
-export function SlotPicker({ slug, serviceId, professionalId, timezone, maxDays, theme, onPick, selected }: Props) {
+export function SlotPicker({ slug, serviceId, professionalId, timezone, maxDays, theme, onPick, selected, onWaitlist }: Props) {
   const today = localDate(new Date(), timezone);
   const days = useMemo(() => Array.from({ length: Math.min(maxDays, 30) + 1 }, (_, i) => addDays(today, i)), [today, maxDays]);
   const [day, setDay] = useState(today);
@@ -32,7 +34,7 @@ export function SlotPicker({ slug, serviceId, professionalId, timezone, maxDays,
     return () => { cancel = true; };
   }, [slug, serviceId, professionalId, day]);
 
-  const soft = theme.text === "#ffffff" ? "#ffffff14" : "#0000000a";
+  const soft = theme.surface;
   const groups = (slots ?? []).reduce<Record<string, Slot[]>>((acc, s) => {
     const h = Number(formatTime(s.starts_at, timezone).slice(0, 2));
     const k = h < 12 ? "Manhã" : h < 18 ? "Tarde" : "Noite";
@@ -57,7 +59,15 @@ export function SlotPicker({ slug, serviceId, professionalId, timezone, maxDays,
       </div>
       {error && <p className="text-sm opacity-80">Não foi possível carregar os horários. Tente de novo.</p>}
       {slots === null && !error && <div className="grid grid-cols-4 gap-2">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-11 animate-pulse rounded-xl" style={{ background: soft }} />)}</div>}
-      {slots?.length === 0 && <p className="rounded-2xl p-4 text-center text-sm" style={{ background: soft }}>Sem horários livres neste dia. Tente outro dia 👉</p>}
+      {slots?.length === 0 && (
+        <div className="rounded-2xl p-4 text-center text-sm" style={{ background: soft }}>
+          <p>Sem horários livres neste dia.</p>
+          {onWaitlist
+            ? <button type="button" onClick={() => onWaitlist(day)} className="mt-3 w-full rounded-xl py-3 font-bold" style={{ background: theme.primary, color: theme.onPrimary }}>Entrar na lista de espera</button>
+            : <p className="opacity-75">Tente outro dia 👉</p>}
+          {onWaitlist && <p className="mt-2 text-xs opacity-70">Se alguém desmarcar, você é avisado no WhatsApp.</p>}
+        </div>
+      )}
       {Object.entries(groups).map(([label, list]) => (
         <div key={label}>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
@@ -74,6 +84,9 @@ export function SlotPicker({ slug, serviceId, professionalId, timezone, maxDays,
           </div>
         </div>
       ))}
+      {onWaitlist && !!slots?.length && (
+        <button type="button" onClick={() => onWaitlist(day)} className="w-full pt-1 text-center text-sm underline opacity-80">Nenhum horário serve? Entrar na lista de espera deste dia</button>
+      )}
     </div>
   );
 }

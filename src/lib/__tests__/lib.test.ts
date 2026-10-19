@@ -7,6 +7,7 @@ import { contrast, resolveTheme } from "../theme";
 import { mediaPathFromUrl, sniffImage } from "../media";
 import { BACKDROPS, backgroundCatalog } from "../backgrounds";
 import { PATTERNS } from "../patterns";
+import { inPeriod, openTimes, waitlistOpenings } from "../waitlist";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -193,5 +194,35 @@ describe("foto de fundo", () => {
     const c = backgroundCatalog("manicure", "champagne");
     expect(c.mine.slice(0, 3).map((i) => i.id)).toEqual(PATTERNS.filter((p) => p.niche === "unhas").map((p) => p.id));
     expect(c.more.flatMap((g) => g.items).some((i) => c.mine.some((m) => m.id === i.id))).toBe(false);
+  });
+});
+
+describe("lista de espera", () => {
+  const base = { now, businessName: "Barbearia Zé", bookingUrl: "https://so-marcar.vercel.app/ze", freeSlotsToday: [], avgTicketCents: 4000, customers: [], tomorrow: [], unresolvedPast: [], trialDaysLeft: null };
+
+  it("filtra horários pelo período pedido", () => {
+    const slots = ["2026-10-22T12:00:00Z", "2026-10-22T16:00:00Z", "2026-10-22T21:30:00Z", "2026-10-22T12:00:00Z"].map((starts_at) => ({ starts_at }));
+    expect(openTimes(slots, "manha", "America/Sao_Paulo")).toEqual(["09:00"]);
+    expect(openTimes(slots, "tarde", "America/Sao_Paulo")).toEqual(["13:00"]);
+    expect(openTimes(slots, "noite", "America/Sao_Paulo")).toEqual(["18:30"]);
+    expect(openTimes(slots, "qualquer", "America/Sao_Paulo")).toEqual(["09:00", "13:00", "18:30"]);
+    expect(inPeriod("11:59", "manha")).toBe(true);
+    expect(inPeriod("12:00", "manha")).toBe(false);
+  });
+
+  it("só avisa quem ainda espera e tem vaga", () => {
+    const entry = (id: string, status: "waiting" | "notified") => ({ id, desired_date: "2026-10-24", period: "qualquer" as const, status, note: null, created_at: "", notified_at: null, service_id: "s", professional_id: null, customer: { name: "Ana Souza", phone: "5511999990009" }, service: { name: "Corte", price_cents: 4500 }, professional: null });
+    const open = new Map([["a", ["10:00"]], ["b", ["10:00"]], ["c", []]]);
+    const list = waitlistOpenings([entry("a", "waiting"), entry("b", "notified"), entry("c", "waiting")], open, "2026-10-20", "2026-10-21");
+    expect(list.map((o) => o.entryId)).toEqual(["a"]);
+    expect(list[0].dateLabel).toBe("no sábado, 24/10");
+  });
+
+  it("vira a primeira oportunidade do dia com a mensagem pronta", () => {
+    const ops = buildOpportunities({ ...base, waitlistOpenings: [{ entryId: "a", name: "Ana Souza", phone: "5511999990009", serviceName: "Corte", dateLabel: "amanhã", times: ["10:00", "11:00"], priceCents: 4500 }] });
+    expect(ops[0].kind).toBe("waitlist");
+    expect(ops[0].valueCents).toBe(4500);
+    expect(ops[0].contacts?.[0].waitlistId).toBe("a");
+    expect(ops[0].contacts?.[0].message).toContain("Oi, Ana! Abriu horário para Corte amanhã no Barbearia Zé: 10:00, 11:00");
   });
 });
