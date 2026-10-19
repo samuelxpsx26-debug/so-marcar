@@ -1,13 +1,13 @@
-// Fotos enviadas pelo dono (capa, logo, profissionais). Validação pura aqui; envio em media-server.ts.
+// Fotos enviadas pelo dono (capa, logo, fundo, profissionais). Validação pura aqui; envio em media-server.ts.
 
 export const MEDIA_BUCKET = "midia";
 export const MEDIA_MAX_BYTES = 2 * 1024 * 1024;
 export const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
-export type MediaKind = "capa" | "logo" | "profissional";
+export type MediaKind = "capa" | "logo" | "profissional" | "fundo";
 
 /** Tamanho máximo (lado maior, em px) que o navegador gera antes de enviar */
-export const MEDIA_MAX_SIDE: Record<MediaKind, number> = { capa: 1600, logo: 512, profissional: 512 };
+export const MEDIA_MAX_SIDE: Record<MediaKind, number> = { capa: 1600, logo: 512, profissional: 512, fundo: 1920 };
 
 /** Descobre o tipo pelo conteúdo do arquivo, sem confiar na extensão ou no que o navegador declarou */
 export function sniffImage(bytes: Uint8Array): MediaType | null {

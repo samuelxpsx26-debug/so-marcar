@@ -30,7 +30,8 @@ export default async function PublicBookingPage({ params }: { params: Promise<{ 
   const theme = resolveTheme(b.theme, b.segment as Segment);
 
   return (
-    <main className={`${brandFonts} min-h-dvh`} style={{ backgroundColor: theme.background, backgroundImage: theme.backgroundImage, color: theme.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
+    <main className={`${brandFonts} relative isolate min-h-dvh`} style={{ backgroundColor: theme.photo ? "#0b0b0d" : theme.background, backgroundImage: theme.photo ? undefined : theme.backgroundImage, color: theme.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
+      {theme.backdrop && <div aria-hidden="true" className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: theme.backdrop }} />}
       <div className="mx-auto max-w-lg px-4 pb-16 pt-4">
         <header className="mb-8">
           <div className="relative flex min-h-48 flex-col justify-end overflow-hidden rounded-3xl p-5 text-white shadow-xl" style={{ backgroundImage: theme.cover, backgroundSize: "cover", backgroundPosition: "center" }}>

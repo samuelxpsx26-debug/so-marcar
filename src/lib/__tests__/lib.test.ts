@@ -5,6 +5,7 @@ import { pricePerDay, zonedToUtc, localDate, addDays, normalizePhone } from "../
 import { isValidSlug, slugify } from "../slug";
 import { contrast, resolveTheme } from "../theme";
 import { mediaPathFromUrl, sniffImage } from "../media";
+import { BACKDROPS } from "../backgrounds";
 
 const now = new Date("2026-10-20T12:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
@@ -153,5 +154,30 @@ describe("fotos", () => {
     expect(mediaPathFromUrl(`${base}/storage/v1/object/public/midia/biz-1/capa-x.jpg`, base)).toBe("biz-1/capa-x.jpg");
     expect(mediaPathFromUrl("https://outro.site/foto.jpg", base)).toBeNull();
     expect(mediaPathFromUrl(null, base)).toBeNull();
+  });
+});
+
+describe("foto de fundo", () => {
+  it("sem escolha salva usa a 1ª foto do pacote do estilo e deixa o texto claro", () => {
+    const t = resolveTheme({ style: "champagne", primary: "#9a4558", background: "#f6efe8" }, "salao");
+    expect(t.photo).toContain(BACKDROPS.champagne[0].photo);
+    expect(t.text).toBe("#ffffff");
+    expect(t.backdrop).toContain(t.photo!);
+  });
+  it("null desliga a foto e volta às cores do dono", () => {
+    const t = resolveTheme({ style: "champagne", primary: "#9a4558", background: "#f6efe8", bg: null }, "salao");
+    expect(t.photo).toBeNull();
+    expect(t.backdrop).toBeNull();
+    expect(t.text).toBe("#111111");
+  });
+  it("aceita id do pacote ou foto enviada, e ignora link inseguro", () => {
+    expect(resolveTheme({ bg: "neon-2" }, "barbearia").photo).toContain(BACKDROPS.neon[1].photo);
+    expect(resolveTheme({ bg: "https://x.supabase.co/a.jpg" }).photo).toBe("https://x.supabase.co/a.jpg");
+    expect(resolveTheme({ bg: "javascript:alert(1)" }).photo).toBeNull();
+  });
+  it("todo estilo tem pacote e os ids não se repetem", () => {
+    const ids = Object.values(BACKDROPS).flat().map((b) => b.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const list of Object.values(BACKDROPS)) expect(list.length).toBeGreaterThanOrEqual(3);
   });
 });

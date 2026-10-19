@@ -1,8 +1,11 @@
 import { SEGMENTS, type Segment } from "./segments";
+import { BACKDROPS, backdropUrl, findBackdrop } from "./backgrounds";
 
 export type ThemeStyle = "couro" | "champagne" | "neon" | "energia" | "moderno";
 
-export type Theme = { primary: string; background: string; text?: string; image?: string | null; logo?: string | null; style?: ThemeStyle };
+export type Theme = { primary: string; background: string; text?: string; image?: string | null; logo?: string | null; style?: ThemeStyle;
+  /** Foto de fundo da página: id do pacote ("couro-1"), URL enviada pelo dono, null = sem foto, ausente = 1ª do pacote do estilo */
+  bg?: string | null };
 
 type StyleInfo = {
   label: string;
@@ -88,6 +91,15 @@ export function isSafeImageUrl(url: string): boolean {
   }
 }
 
+/** URL da foto de fundo: do pacote, enviada pelo dono, ou nenhuma */
+export function backgroundPhoto(bg: string | null | undefined, style: ThemeStyle): string | null {
+  if (bg === null) return null;
+  if (bg === undefined) return backdropUrl(BACKDROPS[style][0]);
+  const pack = findBackdrop(bg);
+  if (pack) return backdropUrl(pack);
+  return isSafeImageUrl(bg) ? bg : null;
+}
+
 /** Aceita o tema salvo e devolve algo sempre legível. Cores inválidas caem no padrão do nicho. */
 export function resolveTheme(raw: Partial<Theme> | null | undefined, segment: Segment = "outro") {
   const fallback = SEGMENTS[segment] ?? SEGMENTS.outro;
@@ -97,18 +109,25 @@ export function resolveTheme(raw: Partial<Theme> | null | undefined, segment: Se
   const image = raw?.image && isSafeImageUrl(raw.image) ? raw.image : null;
   const logo = raw?.logo && isSafeImageUrl(raw.logo) ? raw.logo : null;
   const style: ThemeStyle = raw?.style && raw.style in THEME_STYLES ? raw.style : styleForSegment(segment);
-  const dark = text === "#ffffff";
+  const photo = backgroundPhoto(raw?.bg, style);
+  // Com foto de fundo a página fica escura (como uma vitrine à noite): texto claro e cartões translúcidos
+  const pageText = photo ? "#ffffff" : text;
+  const dark = pageText === "#ffffff";
   return {
     style,
     display: THEME_STYLES[style].display,
     cover: image ? `linear-gradient(180deg, rgba(0,0,0,.1), rgba(0,0,0,.7)), url("${image}")` : styleCover(style, primary),
     primary,
     background,
-    text,
+    text: pageText,
     onPrimary: readableOn(primary),
     image,
     logo,
     backgroundImage: styleTexture(style, primary, dark),
-    lowContrastPrimary: contrast(primary, background) < 2,
+    photo,
+    /** Camada fixa atrás da página: foto escurecida com um brilho da cor do negócio */
+    backdrop: photo ? `radial-gradient(1000px 600px at 85% -10%, ${rgba(primary, 0.22)}, transparent 60%), linear-gradient(180deg, rgba(8,8,10,.5), rgba(8,8,10,.78) 60%, rgba(8,8,10,.9)), url("${photo}")` : null,
+    surface: photo ? "rgba(14,14,17,.62)" : dark ? "#ffffff14" : "#0000000a",
+    lowContrastPrimary: contrast(primary, photo ? "#141416" : background) < 2,
   };
 }

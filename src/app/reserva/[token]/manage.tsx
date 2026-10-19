@@ -23,7 +23,7 @@ export function ManageBooking({ token, info, theme }: { token: string; info: Boo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tz = info.business.timezone;
-  const soft = theme.text === "#ffffff" ? "#ffffff14" : "#0000000a";
+  const soft = theme.surface;
   const primary = { background: theme.primary, color: theme.onPrimary };
 
   async function cancel() {

@@ -4,7 +4,8 @@ import { SubmitButton } from "@/components/submit-button";
 import { SEGMENTS, type Segment } from "@/lib/segments";
 import { resolveTheme, styleForSegment, THEME_STYLE_IDS, THEME_STYLES, type Theme, type ThemeStyle } from "@/lib/theme";
 import { ImageUpload } from "@/components/image-upload";
-import { removeCover, removeLogo, saveTheme, uploadCover, uploadLogo, type R } from "./actions";
+import { BACKDROPS, backdropUrl, findBackdrop, type Backdrop } from "@/lib/backgrounds";
+import { removeBackground, removeCover, removeLogo, saveTheme, uploadBackground, uploadCover, uploadLogo, type R } from "./actions";
 
 export function ThemeEditor({ name, segment, theme, description }: { name: string; segment: Segment; theme: Theme; description: string | null }) {
   const [state, action] = useActionState<R, FormData>(saveTheme, {});
@@ -13,7 +14,14 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
   const [background, setBackground] = useState(theme.background ?? SEGMENTS[segment].suggestion.background);
   const [image, setImage] = useState<string | null>(theme.image ?? null);
   const [logo, setLogo] = useState<string | null>(theme.logo ?? null);
-  const t = resolveTheme({ style, primary, background, image, logo }, segment);
+  const savedUpload = theme.bg && !findBackdrop(theme.bg) ? theme.bg : null;
+  const [uploadedBg, setUploadedBg] = useState<string | null>(savedUpload);
+  const [bgChoice, setBgChoice] = useState<string>(theme.bg === null ? "none" : theme.bg === undefined ? "auto" : savedUpload ? "upload" : theme.bg);
+  const [otherPacks, setOtherPacks] = useState(false);
+  const bg = bgChoice === "none" ? null : bgChoice === "auto" ? undefined : bgChoice === "upload" ? uploadedBg : bgChoice;
+  const t = resolveTheme({ style, primary, background, image, logo, bg }, segment);
+  const isPicked = (b: Backdrop) => bgChoice === b.id || (bgChoice === "auto" && BACKDROPS[style][0].id === b.id);
+  const pickPack = (b: Backdrop) => setBgChoice(BACKDROPS[style][0].id === b.id ? "auto" : b.id);
   const d = t.display;
 
   return (
@@ -48,10 +56,47 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
           </div>
           <p className="mt-2 text-xs text-muted">Trocar o estilo aplica as cores dele. Depois você ajusta as cores como quiser.</p>
         </div>
+        <div>
+          <p className="label">Foto de fundo</p>
+          <input type="hidden" name="bg" value={bgChoice} />
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+            <button type="button" aria-pressed={bgChoice === "none"} onClick={() => setBgChoice("none")}
+              className={`grid aspect-[3/4] place-items-center rounded-xl border text-xs text-muted ${bgChoice === "none" ? "border-brand ring-4 ring-brand/15" : "border-line"}`}
+              style={{ backgroundColor: background, backgroundImage: resolveTheme({ style, primary, background, bg: null }, segment).backgroundImage }}>
+              <span className="rounded-full bg-white/85 px-2 py-0.5 text-zinc-700">Sem foto</span>
+            </button>
+            {uploadedBg && (
+              <button type="button" aria-pressed={bgChoice === "upload"} onClick={() => setBgChoice("upload")}
+                className={`relative aspect-[3/4] overflow-hidden rounded-xl border ${bgChoice === "upload" ? "border-brand ring-4 ring-brand/15" : "border-line"}`}>
+                <img src={uploadedBg} alt="Sua foto" className="h-full w-full object-cover" />
+                <span className="absolute inset-x-1 bottom-1 rounded-full bg-black/60 px-2 py-0.5 text-center text-[11px] text-white">Sua foto</span>
+              </button>
+            )}
+            {BACKDROPS[style].map((b) => <BackdropTile key={b.id} b={b} picked={isPicked(b)} onPick={() => pickPack(b)} />)}
+          </div>
+          {otherPacks && THEME_STYLE_IDS.filter((id) => id !== style).map((id) => (
+            <div key={id} className="mt-3">
+              <p className="mb-1.5 text-xs font-medium text-muted">{THEME_STYLES[id].label}</p>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {BACKDROPS[id].map((b) => <BackdropTile key={b.id} b={b} picked={bgChoice === b.id} onPick={() => setBgChoice(b.id)} />)}
+              </div>
+            </div>
+          ))}
+          <button type="button" className="mt-2 text-sm font-medium text-brand" onClick={() => setOtherPacks(!otherPacks)}>
+            {otherPacks ? "Mostrar só as fotos deste estilo" : "Ver fotos de outros estilos"}
+          </button>
+          <div className="mt-4 rounded-xl border border-dashed border-line p-3">
+            <ImageUpload kind="fundo" label="Foto do seu negócio no fundo" current={uploadedBg} upload={uploadBackground} remove={removeBackground}
+              onChange={(url) => { setUploadedBg(url); setBgChoice(url ? "upload" : "auto"); }}
+              hint="Uma foto do seu espaço fica ainda mais a sua cara. Ela é salva na hora e escurecida para o texto aparecer bem." />
+          </div>
+          <p className="mt-2 text-xs text-muted">Fotos do pacote: Unsplash, livres para uso comercial. Com foto de fundo, a página fica escura para tudo continuar legível.</p>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <ColorField label="Cor dos botões" name="primary" value={primary} onChange={setPrimary} />
           <ColorField label="Cor de fundo" name="background" value={background} onChange={setBackground} />
         </div>
+        {t.photo && <p className="-mt-3 text-xs text-muted">Com foto de fundo, a cor de fundo só aparece se você escolher &quot;Sem foto&quot;.</p>}
         {t.lowContrastPrimary && <p className="rounded-xl bg-amber-50 p-3 text-sm text-warn">A cor dos botões está muito parecida com o fundo. Seus clientes podem ter dificuldade para ver.</p>}
         <div>
           <label className="label" htmlFor="description">Frase de apresentação</label>
@@ -65,7 +110,7 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
 
       <div className="lg:sticky lg:top-8 lg:self-start">
         <p className="label">Prévia</p>
-        <div className="overflow-hidden rounded-[2rem] border-8 border-zinc-900 shadow-xl" style={{ backgroundColor: t.background, backgroundImage: t.backgroundImage, color: t.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
+        <div className="overflow-hidden rounded-[2rem] border-8 border-zinc-900 bg-cover bg-center shadow-xl" style={{ backgroundColor: t.photo ? "#0b0b0d" : t.background, backgroundImage: t.backdrop ?? t.backgroundImage, color: t.text, fontFamily: "var(--font-manrope), system-ui, sans-serif" }}>
           <div className="space-y-3 p-4" style={{ minHeight: 420 }}>
             <div className="flex min-h-32 flex-col justify-end gap-2 rounded-2xl p-4 text-white" style={{ backgroundImage: t.cover, backgroundSize: "cover", backgroundPosition: "center" }}>
               {t.logo ? <img src={t.logo} alt="" className="h-10 w-10 rounded-xl bg-white object-contain" /> : <span className="grid h-10 w-10 place-items-center rounded-xl font-extrabold" style={{ background: t.primary, color: t.onPrimary }}>{name.slice(0, 1).toUpperCase()}</span>}
@@ -73,7 +118,7 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
             </div>
             <p className="text-sm opacity-75">Escolha o serviço</p>
             {["Serviço principal", "Outro serviço"].map((s, i) => (
-              <div key={s} className="rounded-2xl p-3 text-sm" style={{ background: t.text === "#ffffff" ? "#ffffff14" : "#00000008", outline: i === 0 ? `2px solid ${t.primary}` : undefined }}>
+              <div key={s} className="rounded-2xl p-3 text-sm" style={{ background: t.surface, outline: i === 0 ? `2px solid ${t.primary}` : undefined }}>
                 <p className="font-semibold">{s}</p><p className="opacity-70">30 min · R$ 40,00</p>
               </div>
             ))}
@@ -83,6 +128,15 @@ export function ThemeEditor({ name, segment, theme, description }: { name: strin
         </div>
       </div>
     </div>
+  );
+}
+
+function BackdropTile({ b, picked, onPick }: { b: Backdrop; picked: boolean; onPick: () => void }) {
+  return (
+    <button type="button" aria-pressed={picked} onClick={onPick} title={`${b.alt} · Foto: ${b.by} / Unsplash`}
+      className={`aspect-[3/4] overflow-hidden rounded-xl border bg-zinc-200 ${picked ? "border-brand ring-4 ring-brand/15" : "border-line"}`}>
+      <img src={backdropUrl(b, 360)} alt={b.alt} loading="lazy" className="h-full w-full object-cover" />
+    </button>
   );
 }
 

@@ -4,7 +4,7 @@ export type PublicPro = { id: string; name: string; bio: string | null; avatar_u
 export type PublicBusiness = {
   id: string; name: string; slug: string; segment: string; description: string | null; timezone: string;
   whatsapp: string | null; phone: string | null; address: { text?: string } | null;
-  theme: { primary?: string; background?: string; image?: string | null; logo?: string | null; style?: ThemeStyle };
+  theme: { primary?: string; background?: string; image?: string | null; logo?: string | null; style?: ThemeStyle; bg?: string | null };
   cancellation_policy: string | null; max_days_ahead: number; cancel_notice_minutes: number; active: boolean;
   services: PublicService[]; professionals: PublicPro[];
 };

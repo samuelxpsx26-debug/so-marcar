@@ -15,7 +15,8 @@ export default async function ReservaPage({ params }: { params: Promise<{ token:
   const info = data as BookingInfo;
   const theme = resolveTheme(info.business.theme);
   return (
-    <main className="min-h-dvh" style={{ backgroundColor: theme.background, color: theme.text }}>
+    <main className="relative isolate min-h-dvh" style={{ backgroundColor: theme.photo ? "#0b0b0d" : theme.background, color: theme.text }}>
+      {theme.backdrop && <div aria-hidden="true" className="fixed inset-0 -z-10 bg-cover bg-center" style={{ backgroundImage: theme.backdrop }} />}
       <div className="mx-auto max-w-lg px-4 py-10">
         <ManageBooking token={token} info={info} theme={theme} />
       </div>

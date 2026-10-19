@@ -11,7 +11,7 @@ export default async function AparenciaPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Aparência da sua página</h1>
-        <p className="text-sm text-muted">Escolha o estilo, as cores e a foto de capa que combinam com o seu negócio. A prévia mostra como o cliente vê.</p>
+        <p className="text-sm text-muted">Escolha o estilo, as cores, a foto de fundo e a capa que combinam com o seu negócio. A prévia mostra como o cliente vê.</p>
       </div>
       <div className={brandFonts}><ThemeEditor name={business.name} segment={business.segment} theme={business.theme} description={business.description} /></div>
     </div>

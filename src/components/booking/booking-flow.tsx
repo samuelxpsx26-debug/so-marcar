@@ -22,7 +22,7 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
   const service = b.services.find((s) => s.id === serviceId);
   const pros = b.professionals.filter((p) => !serviceId || p.service_ids.length === 0 || p.service_ids.includes(serviceId));
   const proName = slot?.professional_name ?? b.professionals.find((p) => p.id === proId)?.name;
-  const soft = theme.text === "#ffffff" ? "#ffffff14" : "#0000000a";
+  const soft = theme.surface;
   const tz = b.timezone;
 
   function pickService(id: string) {
@@ -160,7 +160,7 @@ function Done({ b, theme, service, proName, startsAt, token, customer, durationM
   const end = new Date(start.getTime() + durationMin * 60000);
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${service} · ${b.name}`)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(`Gerenciar: ${manageUrl}`)}${b.address?.text ? `&location=${encodeURIComponent(b.address.text)}` : ""}`;
-  const soft = theme.text === "#ffffff" ? "#ffffff14" : "#0000000a";
+  const soft = theme.surface;
 
   return (
     <section className="text-center">
