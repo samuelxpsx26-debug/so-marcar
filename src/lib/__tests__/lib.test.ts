@@ -70,7 +70,13 @@ describe("format", () => {
     expect(localDate(new Date("2026-10-21T02:00:00Z"), "America/Sao_Paulo")).toBe("2026-10-20");
     expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
   });
-  it("normaliza telefone", () => expect(normalizePhone("(11) 98888-7777")).toBe("5511988887777"));
+  it("normaliza telefone", () => {
+    expect(normalizePhone("(11) 98888-7777")).toBe("5511988887777");
+    expect(normalizePhone("(011) 98888-7777")).toBe("5511988887777");
+    expect(normalizePhone("+55 11 98888-7777")).toBe("5511988887777");
+    expect(normalizePhone("11 8888-7777")).toBe("5511988887777");
+    expect(normalizePhone("11 3333-4444")).toBe("551133334444");
+  });
 });
 
 describe("slug e tema", () => {

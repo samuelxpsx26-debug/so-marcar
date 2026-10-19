@@ -58,8 +58,10 @@ export function waLink(phone: string, text: string): string {
 }
 
 export function normalizePhone(p: string): string {
-  const d = p.replace(/\D/g, "");
-  return d.length === 10 || d.length === 11 ? `55${d}` : d;
+  // Igual a public.normalize_phone no banco: tira o zero antes do DDD e põe o 9 em celular antigo
+  const x = p.replace(/\D/g, "").replace(/^0+/, "");
+  const d = x.length === 10 || x.length === 11 ? `55${x}` : x;
+  return d.length === 12 && d.startsWith("55") && "6789".includes(d[4]) ? `${d.slice(0, 4)}9${d.slice(4)}` : d;
 }
 
 /** Dias inteiros que faltam até uma data (0 se já passou) */

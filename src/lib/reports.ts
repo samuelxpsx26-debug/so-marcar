@@ -50,8 +50,10 @@ export function computeReport(all: ReportAppt[], range: Range, timeZone: string,
       const c = m.get(a.customerId) ?? { id: a.customerId, name: a.customerName, phone: a.customerPhone, visits: 0, cents: 0, last: a.startsAt };
       m.set(a.customerId, { ...c, visits: c.visits + 1, cents: c.cents + a.priceCents, last: a.startsAt > c.last ? a.startsAt : c.last });
     }
-    return [...m.values()].sort((x, y) => y.cents - x.cents || y.visits - x.visits).slice(0, 10);
+    return [...m.values()];
   })();
+  const topSpenders = [...topCustomers].sort((x, y) => y.cents - x.cents || y.visits - x.visits).slice(0, 10);
+  const topVisitors = [...topCustomers].sort((x, y) => y.visits - x.visits || (y.last > x.last ? 1 : -1)).slice(0, 10);
 
   // Movimento por dia da semana (atendimentos realizados)
   const byWeekday = WEEKDAYS.map((name, i) => ({ name, count: done.filter((a) => new Date(`${day(a)}T12:00:00Z`).getUTCDay() === i).length }));
@@ -76,7 +78,8 @@ export function computeReport(all: ReportAppt[], range: Range, timeZone: string,
     total: inRange.length,
     services: group(done, (a) => a.serviceName),
     professionals: group(done, (a) => a.professionalName),
-    topCustomers,
+    topCustomers: topSpenders,
+    topVisitors,
     byWeekday,
   };
 }
@@ -103,6 +106,8 @@ export function rangeFor(period: string, today: string): Range & { label: string
   const [y, m] = today.split("-").map(Number);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const next = iso(new Date(Date.UTC(y, m - 1, Number(today.slice(8)) + 1)));
+  if (period === "hoje") return { from: today, to: next, label: "Hoje" };
+  if (period === "7d") return { from: iso(new Date(Date.UTC(y, m - 1, Number(today.slice(8)) - 6))), to: next, label: "Últimos 7 dias" };
   if (period === "mes-passado") return { from: iso(new Date(Date.UTC(y, m - 2, 1))), to: iso(new Date(Date.UTC(y, m - 1, 1))), label: "Mês passado" };
   if (period === "90d") return { from: iso(new Date(Date.UTC(y, m - 1, Number(today.slice(8)) - 89))), to: next, label: "Últimos 90 dias" };
   if (period === "ano") return { from: `${y}-01-01`, to: next, label: `Em ${y}` };
