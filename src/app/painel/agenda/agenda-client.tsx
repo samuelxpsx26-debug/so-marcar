@@ -3,9 +3,10 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { addDays, brl, formatTime, localDate, waLink } from "@/lib/format";
 import { SubmitButton } from "@/components/submit-button";
-import { confirmDeposit, spendPackageSession, createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
+import { confirmDeposit, spendPackageSession, spendClubSession, createAppointment, freeSlots, moveAppointment, setStatus, type ActionResult } from "./actions";
 import { notify } from "@/lib/notify-client";
 import { packageUsable, type CustomerPackage, type OpenPackage } from "@/lib/loyalty";
+import { clubCovers, type ClubMember } from "@/lib/club";
 
 export type AgendaAppt = {
   id: string; starts_at: string; ends_at: string; status: string; source: string; price_cents: number; notes: string | null;
@@ -20,7 +21,7 @@ type Hour = { professional_id: string; weekday: number; start_time: string; end_
 
 type Props = {
   view: "dia" | "semana" | "mes"; date: string; start: string; end: string; today: string; timezone: string;
-  professionals: Pro[]; services: Service[]; hours: Hour[]; appointments: AgendaAppt[]; packages?: CustomerPackage[]; openPackages?: OpenPackage[];
+  professionals: Pro[]; services: Service[]; hours: Hour[]; appointments: AgendaAppt[]; packages?: CustomerPackage[]; openPackages?: OpenPackage[]; clubMembers?: (ClubMember & { used: number })[];
 };
 
 const PX_PER_MIN = 1.4;
@@ -228,6 +229,9 @@ function ApptSheet({ a, p, onClose }: { a: AgendaAppt; p: Props; onClose: () => 
   const pkg = a.status !== "completed" && a.status !== "no_show" && !awaitingDeposit(a)
     ? (p.packages ?? []).find((k) => k.customer_id === a.customer?.id && k.service_id === a.service_id && packageUsable(k, new Date(a.starts_at)))
     : undefined;
+  const club = a.status !== "completed" && a.status !== "no_show" && !awaitingDeposit(a) && !pkg
+    ? (p.clubMembers ?? []).find((m) => m.customer_id === a.customer?.id && clubCovers(m, a.service_id))
+    : undefined;
   const earlierToday = slots?.filter((s) => new Date(s.starts_at) < new Date(a.starts_at)) ?? [];
   const first = a.customer?.name.split(" ")[0] ?? "";
 
@@ -259,6 +263,11 @@ function ApptSheet({ a, p, onClose }: { a: AgendaAppt; p: Props; onClose: () => 
           {pkg && (
             <button disabled={pending} onClick={() => run(() => spendPackageSession(a.id, pkg.id))} className="btn col-span-2 bg-violet-600 text-white">
               ✓ Atendido usando o pacote ({pkg.sessions_total - pkg.sessions_used} de {pkg.sessions_total} restantes)
+            </button>
+          )}
+          {club && (
+            <button disabled={pending} onClick={() => run(() => spendClubSession(a.id, club.id))} className="btn col-span-2 bg-violet-600 text-white">
+              ✓ Atendido pelo clube{club.sessions_per_month ? ` (${Math.max(club.sessions_per_month - club.used, 0)} de ${club.sessions_per_month} no mês)` : ""}
             </button>
           )}
           <button disabled={pending} onClick={() => run(() => setStatus(a.id, "completed"))} className="btn bg-emerald-600 text-white">✓ Atendido</button>

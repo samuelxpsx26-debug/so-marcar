@@ -88,3 +88,12 @@ export async function spendPackageSession(appointmentId: string, packageId: stri
   revalidatePath("/painel", "layout");
   return { ok: true };
 }
+
+/** Atendimento coberto pelo clube mensal do cliente */
+export async function spendClubSession(appointmentId: string, memberId: string): Promise<ActionResult> {
+  const { supabase } = await getContext();
+  const { error } = await supabase.rpc("use_club_session", { p_appointment: appointmentId, p_member: memberId });
+  if (error) return { error: ["22023", "P0002"].includes(error.code) ? error.message : "Não foi possível usar o clube." };
+  revalidatePath("/painel", "layout");
+  return { ok: true };
+}

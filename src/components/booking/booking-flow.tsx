@@ -141,6 +141,25 @@ export function BookingFlow({ b, theme }: { b: PublicBusiness; theme: ResolvedTh
               </div>
             </div>
           )}
+          {!!b.club?.length && (
+            <div className="mt-6">
+              <h2 className="mb-3 text-lg font-semibold">Clube mensal</h2>
+              <div className="space-y-2">
+                {b.club.map((k) => (
+                  <div key={k.id} className="flex items-center justify-between gap-3 rounded-2xl p-4" style={{ background: soft }}>
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{k.name}</span>
+                      <span className="block text-sm opacity-70">{k.sessions_per_month ? `${k.sessions_per_month}× por mês` : "Ilimitado"} · {k.services.length ? k.services.join(", ") : "todos os serviços"}</span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block font-bold">{brl(k.price_cents)}<span className="text-xs font-normal opacity-70">/mês</span></span>
+                      {b.whatsapp && <a href={waLink(b.whatsapp, `Oi! Quero assinar o clube "${k.name}" (${brl(k.price_cents)}/mês).`)} target="_blank" className="text-xs underline opacity-80">Quero assinar</a>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
 

@@ -62,3 +62,36 @@ export async function mergeCustomer(keepId: string, dupId: string): Promise<{ er
   revalidatePath("/painel", "layout");
   return { ok: true };
 }
+
+const clubError = (e: { code?: string; message: string }) => (["22023", "P0002"].includes(e.code ?? "") ? e.message : "Não foi possível concluir. Tente de novo.");
+
+/** Cliente entra no clube (com a 1ª mensalidade já recebida, se marcado) */
+export async function subscribeClub(form: FormData): Promise<{ error?: string }> {
+  const customerId = String(form.get("customer_id"));
+  const planId = String(form.get("plan_id"));
+  if (!uuid.test(customerId) || !uuid.test(planId)) return { error: "Escolha o plano." };
+  const { supabase } = await getContext();
+  const { error } = await supabase.rpc("subscribe_club", { p_customer: customerId, p_plan: planId, p_paid: form.get("paid") === "on" });
+  if (error) return { error: clubError(error) };
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+/** Mensalidade do clube recebida: libera o próximo mês */
+export async function recordClubPayment(memberId: string): Promise<{ error?: string }> {
+  if (!uuid.test(memberId)) return { error: "Assinatura inválida." };
+  const { supabase } = await getContext();
+  const { error } = await supabase.rpc("record_club_payment", { p_member: memberId });
+  if (error) return { error: clubError(error) };
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+export async function cancelClub(memberId: string): Promise<{ error?: string }> {
+  if (!uuid.test(memberId)) return { error: "Assinatura inválida." };
+  const { supabase, business } = await getContext();
+  const { error } = await supabase.from("club_members").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("id", memberId).eq("business_id", business.id);
+  if (error) return { error: "Não foi possível cancelar." };
+  revalidatePath("/painel", "layout");
+  return {};
+}

@@ -30,7 +30,7 @@ export function ReportView({ business, p, today, range, r, months }: {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Faturamento" value={brl(r.revenue)} hint={`${r.completed} ${r.completed === 1 ? "atendimento" : "atendimentos"}${r.packagesSold ? ` + ${r.packagesSold} ${r.packagesSold === 1 ? "pacote" : "pacotes"} (${brl(r.packagesCents)})` : ""}`} />
+        <Kpi label="Faturamento" value={brl(r.revenue)} hint={`${r.completed} ${r.completed === 1 ? "atendimento" : "atendimentos"}${r.packagesSold ? ` + ${r.packagesSold} ${r.packagesSold === 1 ? "pacote" : "pacotes"} (${brl(r.packagesCents)})` : ""}${r.clubPayments ? ` + ${r.clubPayments} ${r.clubPayments === 1 ? "mensalidade" : "mensalidades"} do clube (${brl(r.clubCents)})` : ""}`} />
         <Kpi label="Ticket médio" value={brl(r.avgTicket)} hint="por atendimento" />
         <Kpi label="Clientes atendidos" value={String(r.customers)} hint={`${r.newCustomers} ${r.newCustomers === 1 ? "novo" : "novos"} · ${r.returningCustomers} ${r.returningCustomers === 1 ? "voltou" : "voltaram"}`} />
         <Kpi label="Faltas" value={pct(r.noShowRate)} hint={r.noShows ? `${r.noShows} · ${brl(r.lostToNoShows)} perdidos` : "nenhuma falta"} bad={r.noShowRate > 0.1} />

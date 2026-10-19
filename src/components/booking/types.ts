@@ -9,6 +9,7 @@ export type PublicBusiness = {
   deposit?: { mode: "off" | "percent" | "fixed"; value: number; hold_minutes: number };
   loyalty?: { visits: number; reward: string } | null;
   packages?: { id: string; name: string; service_id: string; sessions: number; price_cents: number; valid_days: number | null }[];
+  club?: { id: string; name: string; price_cents: number; sessions_per_month: number | null; services: string[] }[];
   services: PublicService[]; professionals: PublicPro[];
 };
 export type Slot = { professional_id: string; professional_name: string; starts_at: string };

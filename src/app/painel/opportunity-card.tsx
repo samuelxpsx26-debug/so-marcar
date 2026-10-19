@@ -7,6 +7,7 @@ import { markWaitlistNotified } from "./espera/actions";
 
 const accent: Record<Opportunity["kind"], string> = {
   waitlist: "bg-fuchsia-500",
+  club_due: "bg-indigo-500",
   fill_slots: "bg-emerald-500",
   win_back: "bg-violet-500",
   confirm_tomorrow: "bg-sky-500",

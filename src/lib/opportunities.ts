@@ -24,13 +24,17 @@ export type OpportunityInput = {
   trialDaysLeft: number | null;
   /** Pedidos da lista de espera cujo dia já tem horário livre no período pedido */
   waitlistOpenings?: WaitlistOpening[];
+  /** Assinantes do clube com mensalidade vencendo, vencida ou nunca paga */
+  clubDues?: ClubDue[];
 };
+
+export type ClubDue = { name: string; phone: string; planName: string; priceCents: number; daysLate: number }; // daysLate < 0: ainda vai vencer
 
 export type WaitlistOpening = { entryId: string; name: string; phone: string; serviceName: string; dateLabel: string; times: string[]; priceCents: number };
 
 export type Opportunity = {
   id: string;
-  kind: "waitlist" | "fill_slots" | "win_back" | "confirm_tomorrow" | "close_out" | "trial";
+  kind: "waitlist" | "club_due" | "fill_slots" | "win_back" | "confirm_tomorrow" | "close_out" | "trial";
   title: string;
   detail: string;
   valueCents: number;
@@ -79,6 +83,24 @@ export function buildOpportunities(i: OpportunityInput): Opportunity[] {
         message: `Oi, ${first(o.name)}! Abriu horário para ${o.serviceName} ${o.dateLabel} no ${i.businessName}: ${o.times.slice(0, 4).join(", ")}. Para garantir, marque aqui: ${i.bookingUrl}`,
       })),
       href: "/painel/espera",
+    });
+  }
+
+  const dues = i.clubDues ?? [];
+  if (dues.length > 0) {
+    out.push({
+      id: "club_due",
+      kind: "club_due",
+      title: `${dues.length} ${dues.length === 1 ? "mensalidade do clube para receber" : "mensalidades do clube para receber"}`,
+      detail: "Lembre o cliente e, quando ele pagar, toque em \"Mensalidade recebida\" na ficha dele em Clientes.",
+      valueCents: dues.reduce((s, d) => s + d.priceCents, 0),
+      priority: 95,
+      contacts: dues.map((d) => ({
+        name: `${d.name} · ${d.daysLate > 0 ? `${d.daysLate} ${d.daysLate === 1 ? "dia" : "dias"} de atraso` : d.daysLate < 0 ? `vence em ${-d.daysLate} ${d.daysLate === -1 ? "dia" : "dias"}` : "vence hoje"}`,
+        phone: d.phone,
+        message: `Oi, ${first(d.name)}! Passando para lembrar da mensalidade do ${d.planName} aqui no ${i.businessName} (R$ ${(d.priceCents / 100).toFixed(2).replace(".", ",")}). Pode ser no Pix. Obrigado!`,
+      })),
+      href: "/painel/clientes",
     });
   }
 

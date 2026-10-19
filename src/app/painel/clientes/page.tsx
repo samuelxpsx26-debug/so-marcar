@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import { canManage, getContext } from "@/lib/business";
-import { brl, formatDate, waLink } from "@/lib/format";
+import { addDays, brl, formatDate, localDate, waLink } from "@/lib/format";
 import { HelpTip } from "@/components/help-tip";
 import { loyaltyCard, packageUsable, type CustomerPackage } from "@/lib/loyalty";
 import { redeemLoyalty, sellPackage } from "./actions";
 import { MergeForm } from "./merge-form";
+import { ClubBox } from "./club-box";
+import { clubUsed, type ClubMember, type ClubPlan } from "@/lib/club";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -35,6 +37,17 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
     supabase.from("customer_packages").select("id, customer_id, service_id, name, sessions_total, sessions_used, price_cents, expires_at, created_at").eq("business_id", business.id).order("created_at", { ascending: false }),
     supabase.from("packages").select("id, name, price_cents, sessions").eq("business_id", business.id).eq("active", true).order("price_cents"),
   ]);
+  // Clube mensal (tabelas podem não existir antes do SQL do clube)
+  const today = localDate(new Date(), business.timezone);
+  const [clubPlans, clubMembers, clubUse] = await Promise.all([
+    supabase.from("club_plans").select("id, name, price_cents, sessions_per_month, service_ids, active").eq("business_id", business.id).eq("active", true).order("price_cents"),
+    supabase.from("club_members").select("id, customer_id, plan_id, name, price_cents, sessions_per_month, service_ids, status, started_on, paid_until").eq("business_id", business.id).eq("status", "active"),
+    supabase.from("appointments").select("club_member_id, starts_at").eq("business_id", business.id).not("club_member_id", "is", null).gte("starts_at", `${addDays(today, -62)}T00:00:00Z`),
+  ]);
+  const memberOf = new Map<string, ClubMember>();
+  for (const m of (clubMembers.data ?? []) as ClubMember[]) memberOf.set(m.customer_id, m);
+  const useRows = (clubUse.data ?? []) as { club_member_id: string; starts_at: string }[];
+  const usedBy = (m: ClubMember | undefined) => (m ? clubUsed(m, useRows, (iso) => localDate(new Date(iso), business.timezone)) : 0);
   const used = new Map<string, number>();
   for (const r of (redemptions.data ?? []) as { customer_id: string; visits_used: number }[]) used.set(r.customer_id, (used.get(r.customer_id) ?? 0) + r.visits_used);
   const packagesOf = new Map<string, CustomerPackage[]>();
@@ -69,6 +82,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
                   {c.visits} {c.visits === 1 ? "visita" : "visitas"} · {brl(c.spent)}{c.last ? ` · última ${formatDate(c.last, business.timezone, { day: "numeric", month: "short" })}` : ""}
                 </span>
               </span>
+              {memberOf.has(c.id) && <span className="rounded-full bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700">clube</span>}
               {c.card && c.card.rewards > 0 && <span className="rounded-full bg-fuchsia-50 px-2 py-1 text-xs font-medium text-fuchsia-700">🎁 prêmio</span>}
               {c.next ? <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-good">agendado</span> : c.noShows > 0 ? <span className="rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-bad">{c.noShows} falta{c.noShows > 1 ? "s" : ""}</span> : null}
             </summary>
@@ -90,6 +104,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
                   ) : <p className="mt-2 text-muted">Faltam {c.card.missing} {c.card.missing === 1 ? "atendimento" : "atendimentos"} para {business.loyalty_reward}.</p>}
                 </div>
               )}
+              <ClubBox customerId={c.id} member={memberOf.get(c.id) ?? null} used={usedBy(memberOf.get(c.id))} plans={(clubPlans.data ?? []) as ClubPlan[]} today={today} />
               {(c.packages.length > 0 || offers.length > 0) && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">Pacotes</p>

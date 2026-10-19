@@ -5,6 +5,7 @@ import { addDays, formatDate, localDate, zonedToUtc } from "@/lib/format";
 import { AgendaClient, type AgendaAppt } from "./agenda-client";
 import { HelpTip } from "@/components/help-tip";
 import { packageUsable, type CustomerPackage, type OpenPackage } from "@/lib/loyalty";
+import { clubUsed, type ClubMember } from "@/lib/club";
 
 export const metadata: Metadata = { title: "Agenda" };
 
@@ -60,6 +61,16 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const now = new Date();
   const openPackages = ((openPkgs ?? []) as unknown as OpenPackage[]).filter((k) => k.customer && packageUsable(k, now));
 
+  // Clube mensal de quem aparece na agenda (tabela pode não existir antes do SQL do clube)
+  const { data: members } = ids.length
+    ? await supabase.from("club_members").select("id, customer_id, plan_id, name, price_cents, sessions_per_month, service_ids, status, started_on, paid_until").eq("business_id", business.id).eq("status", "active").in("customer_id", ids.slice(0, 300))
+    : { data: [] };
+  const memberIds = ((members ?? []) as ClubMember[]).map((m) => m.id);
+  const { data: clubAppts } = memberIds.length
+    ? await supabase.from("appointments").select("club_member_id, starts_at").in("club_member_id", memberIds).gte("starts_at", `${addDays(date, -62)}T00:00:00Z`)
+    : { data: [] };
+  const clubMembers = ((members ?? []) as ClubMember[]).map((m) => ({ ...m, used: clubUsed(m, (clubAppts ?? []) as { club_member_id: string; starts_at: string }[], (iso) => localDate(new Date(iso), tz)) }));
+
   const step = view === "dia" ? 1 : view === "semana" ? 7 : 30;
   const prev = view === "mes" ? addDays(start, -1) : addDays(date, -step);
   const next = view === "mes" ? end : addDays(date, step);
@@ -103,6 +114,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         appointments={(appts ?? []) as unknown as AgendaAppt[]}
         packages={(pkgs ?? []) as CustomerPackage[]}
         openPackages={openPackages}
+        clubMembers={clubMembers}
       />
     </div>
   );

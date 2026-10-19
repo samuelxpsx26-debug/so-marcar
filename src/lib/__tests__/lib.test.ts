@@ -348,3 +348,18 @@ describe("campanha quem não volta", async () => {
     expect(fillMessage("Oi, {nome}! {negocio} {link} {dias}", { name: "Ana Paula", business: "Barbearia", link: "x.com/b", days: 50 })).toBe("Oi, Ana! Barbearia x.com/b 50");
   });
 });
+
+describe("clube mensal", async () => {
+  const { clubStatus, clubCovers } = await import("../club");
+  it("situação da mensalidade", () => {
+    expect(clubStatus({ status: "active", paid_until: null }, "2026-10-19").kind).toBe("unpaid");
+    expect(clubStatus({ status: "active", paid_until: "2026-10-19" }, "2026-10-19")).toEqual({ kind: "overdue", days: 0 });
+    expect(clubStatus({ status: "active", paid_until: "2026-10-21" }, "2026-10-19")).toEqual({ kind: "due_soon", days: 2 });
+    expect(clubStatus({ status: "active", paid_until: "2026-11-19" }, "2026-10-19").kind).toBe("ok");
+    expect(clubStatus({ status: "cancelled", paid_until: "2026-11-19" }, "2026-10-19").kind).toBe("cancelled");
+  });
+  it("serviços cobertos", () => {
+    expect(clubCovers({ service_ids: [] }, "x")).toBe(true);
+    expect(clubCovers({ service_ids: ["a"] }, "x")).toBe(false);
+  });
+});

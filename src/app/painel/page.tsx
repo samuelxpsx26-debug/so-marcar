@@ -6,6 +6,7 @@ import { addDays, brl, formatDate, formatTime, localDate, waLink, zonedToUtc } f
 import { buildOpportunities, type CustomerVisit, type DayAppointment } from "@/lib/opportunities";
 import { computeValue } from "@/lib/value";
 import { loadWaitlist, waitlistOpenings } from "@/lib/waitlist";
+import { clubStatus } from "@/lib/club";
 import { OpportunityCard } from "./opportunity-card";
 
 export const metadata: Metadata = { title: "Hoje" };
@@ -75,10 +76,17 @@ export default async function HojePage({ searchParams }: { searchParams: Promise
 
   const trialDaysLeft = sub?.status === "trialing" && sub.trial_ends_at ? Math.ceil((new Date(sub.trial_ends_at).getTime() - now.getTime()) / 86_400_000) : null;
 
+  // Mensalidades do clube vencendo nos próximos 3 dias, vencidas ou nunca pagas (tabela pode não existir antes do SQL)
+  const { data: clubRows } = await supabase.from("club_members").select("name, price_cents, paid_until, status, customer:customers(name, phone)").eq("business_id", business.id).eq("status", "active");
+  const clubDues = ((clubRows ?? []) as unknown as { name: string; price_cents: number; paid_until: string | null; status: "active"; customer: { name: string; phone: string } | null }[])
+    .map((m) => ({ m, st: clubStatus(m, today) }))
+    .filter(({ m, st }) => m.customer && st.kind !== "ok")
+    .map(({ m, st }) => ({ name: m.customer!.name, phone: m.customer!.phone, planName: m.name, priceCents: m.price_cents, daysLate: st.kind === "due_soon" ? -st.days : st.days }));
+
   const opportunities = buildOpportunities({
     now, businessName: business.name, bookingUrl, freeSlotsToday: freeToday, avgTicketCents: avgTicket,
     customers: [...byCustomer.values()], tomorrow: tomorrowList.map(toDay), unresolvedPast: unresolved.map(toDay), trialDaysLeft,
-    waitlistOpenings: waitlistOpenings(waitlist.entries, waitlist.open, today, tomorrow),
+    waitlistOpenings: waitlistOpenings(waitlist.entries, waitlist.open, today, tomorrow), clubDues,
   });
 
   const todayRevenue = todayList.filter((a) => a.status !== "no_show").reduce((s, a) => s + a.price_cents, 0);
