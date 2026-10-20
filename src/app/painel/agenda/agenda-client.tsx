@@ -7,6 +7,7 @@ import { confirmDeposit, spendPackageSession, spendClubSession, createAppointmen
 import { notify } from "@/lib/notify-client";
 import { packageUsable, type CustomerPackage, type OpenPackage } from "@/lib/loyalty";
 import { clubCovers, type ClubMember } from "@/lib/club";
+import { publicOrigin } from "@/lib/env";
 
 export type AgendaAppt = {
   id: string; starts_at: string; ends_at: string; status: string; source: string; price_cents: number; notes: string | null;
@@ -251,7 +252,7 @@ function ApptSheet({ a, p, onClose }: { a: AgendaAppt; p: Props; onClose: () => 
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button disabled={pending} onClick={() => run(async () => { const r = await confirmDeposit(a.id); if (r.ok && a.manage_token) notify(a.manage_token); return r; })} className="btn col-span-2 bg-emerald-600 text-white">✓ Sinal recebido</button>
             {a.customer?.phone && a.manage_token && (
-              <a target="_blank" href={waLink(a.customer.phone, `Oi, ${first}! Seu horário de ${formatTime(a.starts_at, p.timezone)} está reservado. Para confirmar, falta o sinal de ${brl(a.deposit_cents ?? 0)} no Pix. O código está aqui: ${window.location.origin}/reserva/${a.manage_token}`)} className="btn bg-[#25D366] px-3 text-xs text-white">Lembrar no WhatsApp</a>
+              <a target="_blank" href={waLink(a.customer.phone, `Oi, ${first}! Seu horário de ${formatTime(a.starts_at, p.timezone)} está reservado. Para confirmar, falta o sinal de ${brl(a.deposit_cents ?? 0)} no Pix. O código está aqui: ${publicOrigin()}/reserva/${a.manage_token}`)} className="btn bg-[#25D366] px-3 text-xs text-white">Lembrar no WhatsApp</a>
             )}
             <button disabled={pending} onClick={() => confirm("Confirmar o horário sem cobrar o sinal?") && run(async () => { const r = await confirmDeposit(a.id, true); if (r.ok && a.manage_token) notify(a.manage_token); return r; })} className="btn btn-ghost px-3 text-xs">Dispensar sinal</button>
           </div>

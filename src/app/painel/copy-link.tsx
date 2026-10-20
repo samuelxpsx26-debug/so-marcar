@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
+import { publicOrigin } from "@/lib/env";
 
 export function CopyLink({ slug, compact = false }: { slug: string; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
-    const url = `${window.location.origin}/${slug}`;
+    const url = `${publicOrigin()}/${slug}`;
     try {
       if (navigator.share && compact) await navigator.share({ title: "Agende comigo", url });
       else await navigator.clipboard.writeText(url);

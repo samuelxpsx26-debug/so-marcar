@@ -10,6 +10,7 @@ import { Input } from "./input";
 import { PixPayment, type DepositInfo } from "./pix-payment";
 import { depositCents } from "@/lib/pix";
 import type { PublicBusiness, ResolvedTheme, Slot } from "./types";
+import { publicOrigin } from "@/lib/env";
 
 type Booked = { id: string; manage_token: string; starts_at: string; deposit_cents?: number; deposit_status?: string };
 type Step = "service" | "pro" | "time" | "details" | "done" | "waitlist";
@@ -263,7 +264,7 @@ function Done({ b, theme, service, proName, booked, customer, durationMin }: { b
     createClient().rpc("get_booking_by_token", { p_token: token }).then(({ data }) => setDeposit((data as { deposit?: DepositInfo } | null)?.deposit ?? null));
   }, [awaiting, token]);
   const tz = b.timezone;
-  const manageUrl = `${window.location.origin}/reserva/${token}`;
+  const manageUrl = `${publicOrigin()}/reserva/${token}`;
   const start = new Date(startsAt);
   const end = new Date(start.getTime() + durationMin * 60000);
   const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
