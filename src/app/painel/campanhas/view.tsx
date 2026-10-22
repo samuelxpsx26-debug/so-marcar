@@ -46,7 +46,7 @@ export function CampaignView({ businessId, businessName, bookingUrl, days, optio
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Campanha: quem não volta<HelpTip>Clientes que já vieram, estão sem aparecer há algum tempo e não têm horário marcado. Toque em &quot;Chamar&quot; para abrir o WhatsApp com a mensagem pronta. Quem marcar pelo link sai da lista sozinho.</HelpTip></h1>
+        <h1 className="text-2xl font-bold tracking-tight">Campanha: quem não volta<HelpTip tutorial="quem-sumiu">Clientes que já vieram, estão sem aparecer há algum tempo e não têm horário marcado. Toque em &quot;Chamar&quot; para abrir o WhatsApp com a mensagem pronta. Quem marcar pelo link sai da lista sozinho.</HelpTip></h1>
         <p className="text-sm text-muted">{shown.length} {shown.length === 1 ? "cliente" : "clientes"} sem vir há {days} dias ou mais · se cada um voltar uma vez, são cerca de <strong className="text-ink">{brl(potential)}</strong></p>
       </div>
 

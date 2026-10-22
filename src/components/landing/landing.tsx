@@ -62,6 +62,7 @@ const FEATURE_GROUPS: FeatureGroup[] = [
       ["Quem mais frequenta e quem mais gasta", "Saiba quem são seus melhores {cp}."],
       ["Ficha de cada {c}", "Histórico de atendimentos, pacotes, clube e selos num lugar só."],
       ["Planilha de {cp}", "Baixe todos os contatos para Excel ou Google Planilhas."],
+      ["Ajuda em cada tela", "Vídeos de 30 segundos e passo a passo abrem na hora, sem sair do que você está fazendo."],
       ["Instala no celular", "Funciona como app, sem loja e sem ocupar espaço."],
     ],
   },

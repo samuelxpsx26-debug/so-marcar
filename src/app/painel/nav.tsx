@@ -14,6 +14,7 @@ const allItems: { href: string; label: string; icon: string; owner?: boolean }[]
   { href: "/painel/servicos", label: "Serviços", icon: "M4 7h16M4 12h16M4 17h10" },
   { href: "/painel/equipe", label: "Equipe", icon: "M17 20v-1a4 4 0 0 0-3-3.9M7 20v-1a4 4 0 0 1 8 0M11 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 11a2.5 2.5 0 1 0 0-5" },
   { href: "/painel/aparencia", label: "Aparência", icon: "M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.2-.8-2 0-.9.7-1.5 1.6-1.5H17a4 4 0 0 0 4-4c0-5-4-9-9-9zM7.5 11.5h.01M10 7.5h.01M15 7.5h.01" },
+  { href: "/painel/aprender", label: "Aprender", icon: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM10 8.5v7l6-3.5z" },
   { href: "/painel/ajustes", label: "Ajustes", icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 14.3H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 5.1V5a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z" },
 ];
 

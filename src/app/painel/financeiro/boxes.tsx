@@ -26,7 +26,7 @@ export function ExpenseBox({ ready, month, today, list }: { ready: boolean; mont
   return (
     <section className="card min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-bold">Gastos avulsos<HelpTip>Gastos que acontecem de vez em quando: gasolina, café ou lanche para clientes, um anúncio, produtos. Lance na hora, em poucos toques.</HelpTip></h2>
+        <h2 className="font-bold">Gastos avulsos<HelpTip tutorial="gastos">Gastos que acontecem de vez em quando: gasolina, café ou lanche para clientes, um anúncio, produtos. Lance na hora, em poucos toques.</HelpTip></h2>
         {ready && !open && <button type="button" onClick={() => setOpen(true)} className="btn btn-primary shrink-0 px-3 py-2 text-xs">+ Lançar gasto</button>}
       </div>
       {open && <ExpenseForm defaultDay={today.startsWith(month) ? today : `${month}-01`} onDone={() => setOpen(false)} />}
@@ -78,7 +78,7 @@ export function FixedBox({ ready, month, list }: { ready: boolean; month: string
   return (
     <section className="card min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-bold">Gastos fixos<HelpTip>Contas que se repetem todo mês, como aluguel, energia e internet. Você cadastra uma vez e elas entram sozinhas no cálculo de cada mês, até você parar.</HelpTip></h2>
+        <h2 className="font-bold">Gastos fixos<HelpTip tutorial="gastos">Contas que se repetem todo mês, como aluguel, energia e internet. Você cadastra uma vez e elas entram sozinhas no cálculo de cada mês, até você parar.</HelpTip></h2>
         {ready && !open && <button type="button" onClick={() => setOpen(true)} className="btn btn-ghost shrink-0 px-3 py-2 text-xs">+ Gasto fixo</button>}
       </div>
       {open && <FixedForm month={month} onDone={() => setOpen(false)} />}
@@ -135,7 +135,7 @@ export function CommissionBox({ ready, month, monthLabel, business, rows, pros, 
   const list = pros.filter((p) => p.active || rows.some((r) => r.professionalId === p.id));
   return (
     <section className="card min-w-0 space-y-3">
-      <h2 className="font-bold">Comissões<HelpTip>A comissão é calculada sozinha a partir dos atendimentos marcados como &quot;Atendido&quot;. Defina para cada profissional uma % do valor ou um valor fixo por atendimento, e, se quiser, uma regra diferente para algum serviço. Em atendimentos de pacote ou clube, a comissão usa o preço do serviço.</HelpTip></h2>
+      <h2 className="font-bold">Comissões<HelpTip tutorial="comissoes">A comissão é calculada sozinha a partir dos atendimentos marcados como &quot;Atendido&quot;. Defina para cada profissional uma % do valor ou um valor fixo por atendimento, e, se quiser, uma regra diferente para algum serviço. Em atendimentos de pacote ou clube, a comissão usa o preço do serviço.</HelpTip></h2>
       {list.length === 0 && <p className="text-sm text-muted">Cadastre a equipe em Equipe para calcular comissões.</p>}
       <div className="divide-y divide-line">
         {list.map((p) => {

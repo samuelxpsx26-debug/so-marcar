@@ -4,6 +4,7 @@ import { getContext } from "@/lib/business";
 import { BottomNav, SideNav } from "./nav";
 import { CopyLink } from "./copy-link";
 import { Presence } from "./presence";
+import { TutorialHost } from "@/components/tutorial-modal";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const { business, email, role } = await getContext();
@@ -31,6 +32,7 @@ export default async function PainelLayout({ children }: { children: React.React
       </div>
       <BottomNav owner={owner} />
       <Presence />
+      <TutorialHost />
     </div>
   );
 }

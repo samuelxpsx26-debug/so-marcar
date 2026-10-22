@@ -23,7 +23,7 @@ export function DepositForm({ business: b, examplePriceCents }: { business: Busi
 
   return (
     <form action={action} className="card space-y-4">
-      <h2 className="text-lg font-bold">Sinal por Pix<HelpTip>Para diminuir faltas: o cliente paga um sinal no Pix para garantir o horário. O dinheiro cai direto na sua conta, sem passar pelo Só Marcar e sem taxa. Você confere no app do banco e toca em &quot;Sinal recebido&quot; na agenda.</HelpTip></h2>
+      <h2 className="text-lg font-bold">Sinal por Pix<HelpTip tutorial="sinal-pix">Para diminuir faltas: o cliente paga um sinal no Pix para garantir o horário. O dinheiro cai direto na sua conta, sem passar pelo Só Marcar e sem taxa. Você confere no app do banco e toca em &quot;Sinal recebido&quot; na agenda.</HelpTip></h2>
       <label className="flex items-center gap-3 text-sm font-medium">
         <input type="checkbox" name="enabled" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="h-5 w-5 accent-[var(--color-brand)]" />
         Cobrar sinal para garantir o horário

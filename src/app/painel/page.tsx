@@ -8,6 +8,7 @@ import { computeValue } from "@/lib/value";
 import { loadWaitlist, waitlistOpenings } from "@/lib/waitlist";
 import { clubStatus } from "@/lib/club";
 import { OpportunityCard } from "./opportunity-card";
+import { TutorialLink } from "@/components/tutorial-modal";
 
 export const metadata: Metadata = { title: "Hoje" };
 
@@ -97,7 +98,7 @@ export default async function HojePage({ searchParams }: { searchParams: Promise
         <p className="text-sm text-muted">{formatDate(now, tz)}</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{bemvindo ? "Sua agenda está no ar! 🎉" : `${greeting(now, tz)}! Aqui está o seu dia.`}</h1>
         {bemvindo && (
-          <p className="mt-2 text-muted">Compartilhe seu link na bio do Instagram e no WhatsApp: <a href={bookingUrl} className="font-semibold text-brand" target="_blank">{bookingUrl.replace(/^https?:\/\//, "")}</a></p>
+          <p className="mt-2 text-muted">Compartilhe seu link na bio do Instagram e no WhatsApp: <a href={bookingUrl} className="font-semibold text-brand" target="_blank">{bookingUrl.replace(/^https?:\/\//, "")}</a> · <TutorialLink id="compartilhar-link">▶ Como divulgar (23s)</TutorialLink></p>
         )}
       </div>
 

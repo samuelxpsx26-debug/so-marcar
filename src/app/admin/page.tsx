@@ -55,6 +55,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     admin.from("marketing_spend").select("channel, amount_cents").eq("month", `${month}-01`).order("channel"),
     admin.rpc("platform_accounts"),
   ]);
+  const { data: suggestions } = await admin.from("suggestions").select("id, business_id, body, created_at").order("created_at", { ascending: false }).limit(30);
   const s = data as Summary;
   const ready = !accountsRes.error;
   const list = (accountsRes.data ?? []) as Account[];
@@ -119,6 +120,26 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <p className="text-xs text-muted">A porcentagem é sobre a etapa anterior. A maior queda é onde vale agir primeiro.</p>
         </section>
       </div>
+
+      <section className="card min-w-0 space-y-3">
+        <h2 className="font-bold">Sugestões dos lojistas <span className="font-normal text-muted">· {suggestions?.length ?? 0}</span></h2>
+        {!suggestions?.length && <p className="text-sm text-muted">Nenhuma sugestão ainda. Elas chegam pela área Aprender do painel.</p>}
+        <div className="divide-y divide-line">
+          {(suggestions ?? []).map((x) => {
+            const acc = list.find((a) => a.id === x.business_id);
+            const wa = waLink(acc?.owner_phone ?? null, `Oi, ${(acc?.owner_name ?? "").split(" ")[0] || "tudo bem"}! Aqui é o Widney, do Só Marcar. Vi sua sugestão: "${x.body.slice(0, 120)}". Obrigado!`);
+            return (
+              <div key={x.id} className="flex items-start gap-3 py-3 text-sm">
+                <span className="min-w-0 flex-1">
+                  <span className="block whitespace-pre-line">{x.body}</span>
+                  <span className="mt-1 block text-xs text-muted">{acc?.name ?? "Negócio"} · {new Date(x.created_at).toLocaleDateString("pt-BR")}</span>
+                </span>
+                {wa && <a href={wa} target="_blank" className="shrink-0 rounded-lg bg-[#25D366] px-2.5 py-1.5 text-xs font-semibold text-white">Responder</a>}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <AccountsTable list={list} now={now} />
 

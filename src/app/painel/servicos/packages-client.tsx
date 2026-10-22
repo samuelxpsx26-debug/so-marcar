@@ -18,7 +18,7 @@ export function PackagesClient({ packages, services, ready }: { packages: Pkg[];
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-bold">Pacotes<HelpTip>Venda várias sessões de uma vez com desconto, como &quot;4 cortes por R$ 140&quot;. O cliente paga o pacote com você e, a cada visita, você toca em &quot;Usar pacote&quot; na agenda. Os pacotes aparecem na sua página com um botão para o cliente pedir pelo WhatsApp.</HelpTip></h2>
+        <h2 className="text-lg font-bold">Pacotes<HelpTip tutorial="pacotes">Venda várias sessões de uma vez com desconto, como &quot;4 cortes por R$ 140&quot;. O cliente paga o pacote com você e, a cada visita, você toca em &quot;Usar pacote&quot; na agenda. Os pacotes aparecem na sua página com um botão para o cliente pedir pelo WhatsApp.</HelpTip></h2>
         <p className="text-sm text-muted">Garanta o retorno do cliente vendendo sessões antecipadas.</p>
       </div>
       {!ready && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Para usar pacotes, rode o arquivo supabase-fidelidade-pacotes.sql no Supabase.</p>}

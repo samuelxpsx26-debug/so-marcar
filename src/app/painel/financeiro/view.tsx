@@ -23,7 +23,7 @@ export function FinanceView({ business, month, today, ready, f, prevProfit, pros
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Financeiro<HelpTip>Quanto sobrou de verdade no mês: o faturamento dos atendimentos marcados como &quot;Atendido&quot; (mais pacotes e clube), menos as comissões da equipe, os gastos fixos e os gastos avulsos. Só você, dono, vê esta tela.</HelpTip></h1>
+          <h1 className="text-2xl font-bold tracking-tight">Financeiro<HelpTip tutorial="gastos">Quanto sobrou de verdade no mês: o faturamento dos atendimentos marcados como &quot;Atendido&quot; (mais pacotes e clube), menos as comissões da equipe, os gastos fixos e os gastos avulsos. Só você, dono, vê esta tela.</HelpTip></h1>
           <p className="text-sm text-muted">{cap(label)}</p>
         </div>
         <div className="flex items-center gap-1 rounded-xl border border-line bg-surface p-1 text-sm">

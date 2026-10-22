@@ -259,4 +259,16 @@ exception when insufficient_privilege then raise notice 'ok: lista de negócios 
 end $$;
 reset role;
 select pg_temp.assert(jsonb_array_length(public.platform_accounts()) = (select count(*) from public.businesses), 'servidor vê todos os negócios no painel do dono');
+-- Sugestões: lojista envia e vê só as próprias; outro negócio não envia em nome da Ana
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+insert into public.suggestions (business_id, body) select v::uuid, 'Queria lembrete automático' from ctx where k = 'biz_a';
+select pg_temp.assert((select count(*) from public.suggestions) = 1, 'lojista envia sugestão');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+select pg_temp.assert((select count(*) from public.suggestions) = 0, 'outro lojista não vê sugestão alheia');
+do $$ begin
+  insert into public.suggestions (business_id, body) select v::uuid, 'sugestão falsa' from ctx where k = 'biz_a';
+  raise exception 'FALHOU: Bruno mandou sugestão pela Ana';
+exception when insufficient_privilege then raise notice 'ok: sugestão só pelo próprio negócio';
+end $$;
+reset role;
 \echo 'TODOS OS TESTES DO BANCO PASSARAM'

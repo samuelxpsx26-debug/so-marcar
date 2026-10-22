@@ -16,7 +16,7 @@ export function ClubClient({ plans, services, ready, members }: { plans: ClubPla
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-lg font-bold">Clube mensal<HelpTip>O cliente paga uma mensalidade e pode vir até X vezes no mês, como &quot;4 cortes por mês por R$ 120&quot;. Você recebe a mensalidade direto (Pix ou dinheiro) e marca em Clientes. Na agenda, toque em &quot;Atendido pelo clube&quot; e o atendimento sai sem valor.</HelpTip></h2>
+        <h2 className="text-lg font-bold">Clube mensal<HelpTip tutorial="clube">O cliente paga uma mensalidade e pode vir até X vezes no mês, como &quot;4 cortes por mês por R$ 120&quot;. Você recebe a mensalidade direto (Pix ou dinheiro) e marca em Clientes. Na agenda, toque em &quot;Atendido pelo clube&quot; e o atendimento sai sem valor.</HelpTip></h2>
         <p className="text-sm text-muted">Receita garantida todo mês e cliente que volta sempre.</p>
       </div>
       {!ready && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">Para usar o clube, rode o arquivo supabase-clube.sql no Supabase.</p>}

@@ -1,8 +1,12 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
+import { findTutorial } from "@/lib/tutorials";
+import { openTutorial } from "./tutorial-modal";
 
-/** Botão "?" pequeno ao lado de um título: abre uma explicação curta e fecha ao clicar fora */
-export function HelpTip({ children, label = "O que é isso?" }: { children: React.ReactNode; label?: string }) {
+/** Botão "?" pequeno ao lado de um título: abre uma explicação curta e fecha ao clicar fora.
+ *  Com `tutorial`, mostra também um botão que abre o vídeo/passo a passo por cima da tela. */
+export function HelpTip({ children, label = "O que é isso?", tutorial }: { children: React.ReactNode; label?: string; tutorial?: string }) {
+  const t = tutorial ? findTutorial(tutorial) : null;
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const open = pos !== null;
   const id = useId();
@@ -39,6 +43,12 @@ export function HelpTip({ children, label = "O que é isso?" }: { children: Reac
       {pos && (
         <span id={id} role="note" style={pos} className="fixed z-50 rounded-xl border border-line bg-white p-3 text-left text-xs font-normal normal-case leading-relaxed tracking-normal text-zinc-700 shadow-xl sm:w-72">
           {children}
+          {t && (
+            <button type="button" onClick={() => { setPos(null); openTutorial(t.id); }}
+              className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-white">
+              {t.seconds ? <>▶ Ver vídeo ({t.seconds}s)</> : "Ver passo a passo"}
+            </button>
+          )}
         </span>
       )}
     </span>
