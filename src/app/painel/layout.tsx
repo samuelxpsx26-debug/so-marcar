@@ -3,6 +3,7 @@ import { Logo } from "@/components/logo";
 import { getContext } from "@/lib/business";
 import { BottomNav, SideNav } from "./nav";
 import { CopyLink } from "./copy-link";
+import { Presence } from "./presence";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const { business, email, role } = await getContext();
@@ -29,6 +30,7 @@ export default async function PainelLayout({ children }: { children: React.React
         <main className="mx-auto max-w-5xl px-4 pb-28 pt-5 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
       </div>
       <BottomNav owner={owner} />
+      <Presence />
     </div>
   );
 }

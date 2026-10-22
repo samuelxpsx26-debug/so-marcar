@@ -8,7 +8,7 @@ import { invoiceSubscriptionId, mapStripeStatus, subscriptionPeriodEnd, toIso } 
  * Lê o estado ATUAL da assinatura direto na Stripe (nunca confia só no payload do
  * webhook ou no redirecionamento do checkout) e grava no banco.
  */
-export async function syncStripeSubscription(db: SupabaseClient, stripeSubscriptionId: string, cause: { event: string; eventId?: string; error?: string | null }) {
+export async function syncStripeSubscription(db: SupabaseClient, stripeSubscriptionId: string, cause: { event: string; eventId?: string; error?: string | null; amountCents?: number }) {
   const fetchedAt = new Date().toISOString();
   const sub = await getStripe().subscriptions.retrieve(stripeSubscriptionId);
   const businessId = sub.metadata?.business_id;
@@ -53,7 +53,7 @@ export async function syncStripeSubscription(db: SupabaseClient, stripeSubscript
 
   await db.from("subscription_events").insert({
     subscription_id: row.id, kind: cause.event,
-    data: { stripe_event: cause.eventId ?? null, stripe_status: sub.status, status: mapped ?? row.status, applied: Boolean(changed?.length) },
+    data: { stripe_event: cause.eventId ?? null, stripe_status: sub.status, status: mapped ?? row.status, applied: Boolean(changed?.length), ...(cause.amountCents !== undefined && { amount_cents: cause.amountCents }) },
   });
   return { status: mapped ?? row.status, applied: Boolean(changed?.length) };
 }
@@ -78,7 +78,8 @@ export async function handleStripeEvent(db: SupabaseClient, event: Stripe.Event)
     const subId = invoiceSubscriptionId(event.data.object);
     if (!subId) return { ignored: true };
     const error = event.type === "invoice.paid" ? null : "Pagamento recusado. Atualize o cartão para não pausar a agenda.";
-    return syncStripeSubscription(db, subId, { ...cause, error });
+    // Valor da fatura: o /admin conta como mês pago só fatura com valor (a de R$ 0 do teste não conta)
+    return syncStripeSubscription(db, subId, { ...cause, error, amountCents: event.data.object.amount_paid ?? 0 });
   }
   return { ignored: true };
 }

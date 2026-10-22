@@ -245,4 +245,18 @@ select pg_temp.assert((select count(*) from public.expenses where business_id = 
   and (select count(*) from public.commission_rules) = 0 and (select count(*) from public.commission_payouts) = 0, 'administrador não vê gastos nem comissões');
 reset role;
 delete from public.business_members where user_id = '00000000-0000-0000-0000-00000000000b' and business_id = (select v::uuid from ctx where k = 'biz_a');
+-- Painel do dono do Só Marcar: último acesso só do próprio usuário; lista de negócios só pelo servidor
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.touch_last_seen();
+reset role;
+select pg_temp.assert((select last_seen_at is not null from public.profiles where id = '00000000-0000-0000-0000-00000000000a')
+  and (select last_seen_at is null from public.profiles where id = '00000000-0000-0000-0000-00000000000b'), 'último acesso marca só quem está usando');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+do $$ begin
+  perform public.platform_accounts();
+  raise exception 'FALHOU: lojista leu a lista de todos os negócios';
+exception when insufficient_privilege then raise notice 'ok: lista de negócios só para o dono do Só Marcar';
+end $$;
+reset role;
+select pg_temp.assert(jsonb_array_length(public.platform_accounts()) = (select count(*) from public.businesses), 'servidor vê todos os negócios no painel do dono');
 \echo 'TODOS OS TESTES DO BANCO PASSARAM'
