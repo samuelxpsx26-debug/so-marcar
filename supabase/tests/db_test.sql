@@ -210,4 +210,39 @@ do $$ begin
 exception when insufficient_privilege then raise notice 'ok: assinatura só muda pelo servidor';
 end $$;
 reset role;
+
+-- Financeiro: só o dono vê e lança gastos e comissões
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+insert into public.expenses (business_id, category, amount_cents, spent_on) select v::uuid, 'Gasolina', 5000, current_date from ctx where k = 'biz_a';
+insert into public.fixed_expenses (business_id, category, amount_cents, starts_on) select v::uuid, 'Aluguel', 150000, date_trunc('month', current_date)::date from ctx where k = 'biz_a';
+insert into public.commission_rules (business_id, professional_id, mode, value) select (select v::uuid from ctx where k = 'biz_a'), v::uuid, 'percent', 4000 from ctx where k = 'pro';
+insert into public.commission_payouts (business_id, professional_id, month, amount_cents) select (select v::uuid from ctx where k = 'biz_a'), v::uuid, date_trunc('month', current_date)::date, 1600 from ctx where k = 'pro';
+select pg_temp.assert((select count(*) from public.expenses) + (select count(*) from public.fixed_expenses) + (select count(*) from public.commission_rules) + (select count(*) from public.commission_payouts) = 4, 'dona lança gastos, fixos e comissões');
+do $$ begin
+  insert into public.fixed_expenses (business_id, category, amount_cents, starts_on) select v::uuid, 'Energia', 100, '2026-10-15' from ctx where k = 'biz_a';
+  raise exception 'FALHOU: gasto fixo começando fora do dia 1';
+exception when check_violation then raise notice 'ok: gasto fixo sempre começa no dia 1';
+end $$;
+do $$ begin
+  insert into public.commission_rules (business_id, professional_id, mode, value) select (select v::uuid from ctx where k = 'biz_a'), v::uuid, 'fixed', 1000 from ctx where k = 'pro';
+  raise exception 'FALHOU: duas regras gerais para o mesmo profissional';
+exception when unique_violation then raise notice 'ok: uma regra geral por profissional';
+end $$;
+
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+select pg_temp.assert((select count(*) from public.expenses) + (select count(*) from public.commission_rules) = 0, 'outro negócio não vê o financeiro da Ana');
+do $$ begin
+  insert into public.expenses (business_id, category, amount_cents, spent_on) select v::uuid, 'Hack', 100, current_date from ctx where k = 'biz_a';
+  raise exception 'FALHOU: Bruno lançou gasto na Ana';
+exception when insufficient_privilege then raise notice 'ok: Bruno não lança gasto na Ana';
+end $$;
+
+-- Mesmo administrador do negócio não vê o financeiro (só o dono)
+reset role;
+insert into public.business_members (business_id, user_id, role) select v::uuid, '00000000-0000-0000-0000-00000000000b', 'admin' from ctx where k = 'biz_a';
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+select pg_temp.assert((select count(*) from public.expenses where business_id = (select v::uuid from ctx where k = 'biz_a')) = 0
+  and (select count(*) from public.commission_rules) = 0 and (select count(*) from public.commission_payouts) = 0, 'administrador não vê gastos nem comissões');
+reset role;
+delete from public.business_members where user_id = '00000000-0000-0000-0000-00000000000b' and business_id = (select v::uuid from ctx where k = 'biz_a');
 \echo 'TODOS OS TESTES DO BANCO PASSARAM'

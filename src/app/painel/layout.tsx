@@ -5,7 +5,8 @@ import { BottomNav, SideNav } from "./nav";
 import { CopyLink } from "./copy-link";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
-  const { business, email } = await getContext();
+  const { business, email, role } = await getContext();
+  const owner = role === "owner";
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[250px_1fr]">
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-surface p-4 lg:flex">
@@ -14,7 +15,7 @@ export default async function PainelLayout({ children }: { children: React.React
           <p className="truncate text-sm font-semibold">{business.name}</p>
           <CopyLink slug={business.slug} />
         </div>
-        <div className="mt-6 flex-1"><SideNav /></div>
+        <div className="mt-6 flex-1"><SideNav owner={owner} /></div>
         <form action="/sair" method="post" className="border-t border-line pt-3">
           <p className="truncate px-1 text-xs text-muted">{email}</p>
           <button className="mt-1 px-1 text-sm text-muted hover:text-ink">Sair</button>
@@ -27,7 +28,7 @@ export default async function PainelLayout({ children }: { children: React.React
         </header>
         <main className="mx-auto max-w-5xl px-4 pb-28 pt-5 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
       </div>
-      <BottomNav />
+      <BottomNav owner={owner} />
     </div>
   );
 }
