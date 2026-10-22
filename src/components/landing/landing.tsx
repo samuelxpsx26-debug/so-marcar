@@ -56,6 +56,8 @@ const FEATURE_GROUPS: FeatureGroup[] = [
     lead: "Os números do seu negócio num toque.",
     icon: "M4 20V10M10 20V4M16 20v-7M22 20H2",
     items: [
+      ["Lucro real do mês", "Lance aluguel, energia, gasolina e outros gastos: o app desconta tudo e mostra quanto sobrou de verdade."],
+      ["Comissão da equipe", "Em % ou valor fixo por atendimento, calculada sozinha e com resumo pronto para o WhatsApp."],
       ["Relatórios", "Faturamento de hoje, da semana, do mês e do ano, por serviço e profissional."],
       ["Quem mais frequenta e quem mais gasta", "Saiba quem são seus melhores {cp}."],
       ["Ficha de cada {c}", "Histórico de atendimentos, pacotes, clube e selos num lugar só."],
