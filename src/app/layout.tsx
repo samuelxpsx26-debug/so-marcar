@@ -4,7 +4,7 @@ import { SwRegister } from "@/components/sw-register";
 
 export const metadata: Metadata = {
   title: { default: "Só Marcar — agenda online que traz cliente de volta", template: "%s · Só Marcar" },
-  description: "Agendamento online, lembretes automáticos e recuperação de clientes para quem trabalha com hora marcada. 1 mês grátis.",
+  description: "Agendamento online pelo link, confirmação pelo WhatsApp e recuperação de clientes para quem trabalha com hora marcada. 1 mês grátis.",
   applicationName: "Só Marcar",
   appleWebApp: { capable: true, title: "Só Marcar", statusBarStyle: "default" },
   icons: { icon: "/icons/icon.svg", apple: "/icons/apple-touch-icon.png" },

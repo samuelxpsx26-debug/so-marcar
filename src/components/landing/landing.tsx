@@ -42,7 +42,7 @@ const FEATURE_GROUPS: FeatureGroup[] = [
   },
   {
     title: "{CP} que voltam",
-    lead: "Quem vem uma vez, volta sempre.",
+    lead: "Para quem já veio marcar de novo.",
     icon: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z",
     items: [
       ["Cartão fidelidade", "Selos automáticos a cada atendimento e prêmio na hora certa."],
@@ -127,7 +127,7 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
   const steps = [
     { t: "Crie sua página", d: "Cadastre serviços, preços, horários e equipe. Escolha o tema do seu nicho e pronto." },
     { t: "Compartilhe o link", d: `Coloque na bio do Instagram, no WhatsApp e no Google. Seus ${t.clientPlural} marcam sozinhos.` },
-    { t: "Acompanhe e cresça", d: "Receba os agendamentos, mande lembretes e veja todo dia quem chamar de volta." },
+    { t: "Chame de volta", d: "Receba os agendamentos, mande lembretes e veja todo dia quem chamar de volta." },
   ];
   const opps = [
     { n: "2", t: "Horários vagos hoje à tarde", d: "15:30 e 17:00 ainda livres", a: "Divulgar" },
@@ -322,9 +322,9 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
         <section id="funcoes" className="lp-band">
           <div className="lp-wrap lp-section">
             <div className="lp-head">
-              <span className="lp-eyebrow">Tudo incluído no plano</span>
-              <h2 className="lp-h2 lp-display">Tudo o que o Só Marcar faz por você.</h2>
-              <p className="lp-muted" style={{ margin: 0, fontSize: 17, lineHeight: 1.6 }}>Nada de plano básico e plano completo: por {priceLabel} por mês você usa todas as funções abaixo, sem limite de agendamentos.</p>
+              <span className="lp-eyebrow">Funções</span>
+              <h2 className="lp-h2 lp-display">Tudo o que vem no plano.</h2>
+              <p className="lp-muted" style={{ margin: 0, fontSize: 17, lineHeight: 1.6 }}>Não existe plano básico nem completo. Por {priceLabel} por mês você usa todas as funções abaixo, sem limite de agendamentos.</p>
             </div>
             <div className="lp-grid" style={{ "--lp-min": "440px" } as CSSProperties}>
               {FEATURE_GROUPS.map((g) => (
@@ -359,7 +359,7 @@ export function Landing({ initialNiche, priceLabel, perDayLabel, trialDays, noti
           <div className="lp-wrap lp-split" style={{ paddingTop: 80 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <span className="lp-eyebrow">Preço justo</span>
-              <h2 className="lp-h2 lp-display">Um valor fixo. Nenhuma comissão.</h2>
+              <h2 className="lp-h2 lp-display">Valor fixo por mês, sem comissão.</h2>
               <p>Tem app que fica com uma parte de cada atendimento. Aqui não: quanto mais a sua agenda enche, mais sobra para você. Um {t.clientWord} que volta já paga o mês.</p>
             </div>
             <div className="lp-price" style={{ flex: "0 1 440px" }}>
