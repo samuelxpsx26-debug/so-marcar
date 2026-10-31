@@ -43,3 +43,6 @@ next-env.d.ts
 
 # gerado pelo next dev
 AGENTS.md
+
+# graphify (mapa do código, gerado localmente com `graphify update .`)
+graphify-out/
